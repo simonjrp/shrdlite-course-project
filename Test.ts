@@ -152,7 +152,7 @@ function test(c: TestCase) : boolean {
     var start = new TestNode({x: 0, y: 0});
     var goal = new TestNode({x: g.size.x-1, y: g.size.y-1});
     var goalf = (n: TestNode) => n.compareTo(goal) == 0;
-    var h = (n: TestNode) => 0; //Math.abs(n.pos.x - goal.pos.x) + Math.abs(n.pos.y - goal.pos.y);
+    var h = (n: TestNode) => 0; //Math.ab/s(n.pos.x - goal.pos.x) + Math.abs(n.pos.y - goal.pos.y);
 
 //    console.log(g.toString(start,goal))
 
@@ -185,13 +185,14 @@ function test(c: TestCase) : boolean {
 	    console.log("Expected cost: " + c.cost);
 	    return false;
 	}
-    } catch (e) {
+   } catch (e) {
+   console.log( e.toString() );
 	console.log("Test failed! No path found");
 	
 	console.log("Start: " + start.toString());
 	console.log("Goal: " + goal.toString());
 	console.log(g.toString(start, goal));
-	
+
 	console.log("Expected path: " + c.path);
 	console.log("Expected cost: " + c.cost);
     }
