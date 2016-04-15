@@ -90,7 +90,7 @@ function aStarSearch<Node> (
         current = values[lowest];
 
         //goal found
-        if( goal( current) ){
+        if( goal( current) ){ //TODO REVERSE THIS....
           var total_path : Array<Node>  = new Array<Node>();
           total_path.push( current);
 
@@ -101,6 +101,7 @@ function aStarSearch<Node> (
             current = cameFrom.getValue(current)
             total_path.push(current)
           }
+          total_path = total_path.reverse();
           result.path = total_path;
           return result;
         }
@@ -134,7 +135,7 @@ function aStarSearch<Node> (
           fScore.setValue(neighbor.to, gScore.getValue(neighbor.to) + heuristics(neighbor.to) );
         }
     }
-    throw new Error("#aStarSearch - No error was found");
+    throw new Error("#aStarSearch - No path was found");
 }
 
 
