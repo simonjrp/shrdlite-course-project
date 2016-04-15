@@ -1,6 +1,4 @@
 ///<reference path="lib/collections.ts"/>
-///<reference path="lib/node.d.ts"/>
-
 /** Graph module
 *
 *  Types for generic A\* implementation.
@@ -9,6 +7,7 @@
 *  that you should change is the `aStarSearch` function. Everything
 *  else should be used as-is.
 */
+
 
 /** An edge in a graph. */
 class Edge<Node> {
@@ -48,6 +47,8 @@ class SearchResult<Node> {
 * @param timeout Maximum time to spend performing A\* search.
 * @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
 */
+
+
 function aStarSearch<Node> (
     graph : Graph<Node>,
     start : Node,
@@ -55,19 +56,86 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+
+    var current : Node;
+    var closedSet : collections.Set<Node>;
+
+    var openSet : collections.Set<Node>;
+    openSet.add( start )
+
+    var gScore  : collections.Dictionary<Node,number>
+    gScore.setValue(start, 0)
+
+    var fScore :  collections.Dictionary<Node, number>
+    fScore.setValue(start, heuristics( start) )
+
+    var cameFrom :  collections.Dictionary<Node, Node>
+
+    var lowest : number ;
+    var neighbor : Edge<Node>;
+    var tentative_gScore : number;
+    var values  : Array<Node>
+;
+
+    while( openSet.isEmpty() == false )
+    {
+        // current := the node in openSet having the lowest fScore[] value
+        values = openSet.toArray();
+        lowest = -1;
+        for( var i : number = 0; i < values.length; ++i)
+        {
+            if( lowest == -1  || values[lowest ]  > values[i]  ) {
+              lowest = i;
+            }
+        }
+        current = values[lowest];
+
+        //goal found
+        if( goal( current) ){
+          var total_path : Node[];
+          total_path.push( current);
+
+          var result : SearchResult<Node>;
+          result.cost = gScore.getValue( current );
+
+          while (cameFrom.containsKey( current) ) {
+            current = cameFrom.getValue(current)
+            total_path.push(current)
+          }
+          result.path = total_path;
+          return result;
+        }
+        openSet.remove(current);
+        closedSet.add(current);
+
+
+
+        for( var i : number; i < graph.outgoingEdges(current).length; ++i )
+        {
+          neighbor = graph.outgoingEdges(current)[i];
+          if ( closedSet.contains( neighbor.to) ) {
+              continue		// Ignore the neighbors which are already evaluated.
+          }
+
+
+          // The distance from start to a neighbor
+          tentative_gScore = gScore.getValue(current) + neighbor.cost; //TODO BUGG?? since current might not exist?
+
+          if( !openSet.contains(neighbor.to) ) {
+              openSet.add(neighbor.to)
+          }
+          else if( gScore.containsKey(neighbor.to)
+          && tentative_gScore >= gScore.getValue(neighbor.to) )
+          {
+              continue		// This is not a better path.
+          }
+          // This path is the best until now. Record it!
+          cameFrom.setValue(neighbor.to, current );
+          gScore.setValue(neighbor.to, tentative_gScore );
+          fScore.setValue(neighbor.to, gScore.getValue(neighbor.to) + heuristics(neighbor.to) );
+        }
     }
-    return result;
+    throw new Error("No solution found");
 }
 
 
