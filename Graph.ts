@@ -58,24 +58,23 @@ function aStarSearch<Node> (
 ) : SearchResult<Node> {
 
     var current : Node;
-    var closedSet : collections.Set<Node>;
+    var closedSet : collections.Set<Node> = new collections.Set<Node>();
 
-    var openSet : collections.Set<Node>;
-    openSet.add( start )
-
-    var gScore  : collections.Dictionary<Node,number>
+    var openSet : collections.Set<Node> = new collections.Set<Node>() ;
+    openSet.add( start ) //TODO NEED TO MAKE NEW TO CREATE INSTACNE OF CLASS?
+    var gScore  : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>();
     gScore.setValue(start, 0)
 
-    var fScore :  collections.Dictionary<Node, number>
+    var fScore :  collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
     fScore.setValue(start, heuristics( start) )
 
-    var cameFrom :  collections.Dictionary<Node, Node>
+    var cameFrom :  collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
 
     var lowest : number ;
-    var neighbor : Edge<Node>;
+    var neighbor : Edge<Node> = new Edge<Node>();
     var tentative_gScore : number;
-    var values  : Array<Node>
-;
+    var values  : Array<Node> = new Array<Node>();
+
 
     while( openSet.isEmpty() == false )
     {
@@ -92,10 +91,10 @@ function aStarSearch<Node> (
 
         //goal found
         if( goal( current) ){
-          var total_path : Node[];
+          var total_path : Array<Node>  = new Array<Node>();
           total_path.push( current);
 
-          var result : SearchResult<Node>;
+          var result : SearchResult<Node> = new SearchResult<Node>();
           result.cost = gScore.getValue( current );
 
           while (cameFrom.containsKey( current) ) {
@@ -135,7 +134,7 @@ function aStarSearch<Node> (
           fScore.setValue(neighbor.to, gScore.getValue(neighbor.to) + heuristics(neighbor.to) );
         }
     }
-    throw new Error("No solution found");
+    throw new Error("#aStarSearch - No error was found");
 }
 
 
