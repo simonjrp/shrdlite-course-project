@@ -61,7 +61,8 @@ function aStarSearch<Node> (
     var closedSet : collections.Set<Node> = new collections.Set<Node>();
 
     var openSet : collections.Set<Node> = new collections.Set<Node>() ;
-    openSet.add( start ) //TODO NEED TO MAKE NEW TO CREATE INSTACNE OF CLASS?
+    openSet.add( start );
+
     var gScore  : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>();
     gScore.setValue(start, 0)
 
@@ -75,36 +76,34 @@ function aStarSearch<Node> (
     var tentative_gScore : number;
     var values  : Array<Node> = new Array<Node>();
 
-
+    var result : SearchResult<Node> = new SearchResult<Node>();
+    result.path = new Array<Node>();
     while( openSet.isEmpty() == false )
     {
         // current := the node in openSet having the lowest fScore[] value
         values = openSet.toArray();
-        lowest = -1;
+        lowest = 0;
         for( var i : number = 0; i < values.length; ++i)
         {
-            if( lowest == -1  || values[lowest ]  > values[i]  ) {
+            if( fScore.containsKey( values[i] ) && fScore.getValue( values[lowest])  > fScore.getValue( values[i]) ) {
               lowest = i;
             }
         }
         current = values[lowest];
 
         //goal found
-        if( goal( current) ){ //TODO REVERSE THIS....
-          var total_path : Array<Node>  = new Array<Node>();
-          total_path.push( current);
-
-          var result : SearchResult<Node> = new SearchResult<Node>();
+        if( goal( current) ){
           result.cost = gScore.getValue( current );
 
+          result.path.push( current)
           while (cameFrom.containsKey( current) ) {
             current = cameFrom.getValue(current)
-            total_path.push(current)
+            result.path.push(current)
           }
-          total_path = total_path.reverse();
-          result.path = total_path;
+          result.path = result.path.reverse();
           return result;
         }
+
         openSet.remove(current);
         closedSet.add(current);
 
@@ -119,7 +118,10 @@ function aStarSearch<Node> (
 
 
           // The distance from start to a neighbor
-          tentative_gScore = gScore.getValue(current) + neighbor.cost; //TODO BUGG?? since current might not exist?
+          if( !gScore.containsKey( current ) ) {
+            throw new Error( "#aStarSearch - Distance is infinity/unknown" );
+          }
+          tentative_gScore = gScore.getValue(current) + neighbor.cost;
 
           if( !openSet.contains(neighbor.to) ) {
               openSet.add(neighbor.to)
@@ -133,8 +135,8 @@ function aStarSearch<Node> (
           cameFrom.setValue(neighbor.to, current );
           gScore.setValue(neighbor.to, tentative_gScore );
           fScore.setValue(neighbor.to, gScore.getValue(neighbor.to) + heuristics(neighbor.to) );
-        }
-    }
+        } //for
+    } //while
     throw new Error("#aStarSearch - No path was found");
 }
 
