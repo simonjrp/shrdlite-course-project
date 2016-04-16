@@ -60,12 +60,101 @@ function aStarSearch<Node> (
         path: [start],
         cost: 0
     };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+
+    function compareCost(a : Node, b : Node) : number {
+        var costA = g.getValue(a) + heuristics(a);
+        var costB = g.getValue(b) + heuristics(b);
+        if (costA > costB)
+            return -1
+        else if (costA < costB)
+            return 1
+        else
+            return 0
+    };
+
+    function expandPath(node: Node): Node[] {
+        var parentNode: Node = parent.getValue(node);
+        if (parentNode === start)
+            return [];
+        else
+            var result = expandPath(parentNode);
+            result.push(node);
+            return result;
+    }
+
+    // Cost to get to each node form the start node
+    var g = new collections.Dictionary<Node, number>();
+
+    var visited = new collections.Set<Node>();
+
+    // The current frontier
+    var frontier = new collections.PriorityQueue<Node>(compareCost);
+
+    // A map with parents for each node
+    var parent = new collections.Dictionary<Node, Node>();
+    
+    // Add the initial starting node
+    frontier.enqueue(start);
+    g.setValue(start, 0);
+
+    var startTime: number = new Date().getTime();
+    var timeElapsed: number = 0;
+    var timeStamp: number = new Date().getTime();
+
+    while (!frontier.isEmpty() && timeElapsed <= timeout) {
+        // Pick node with smallest f() = g() + h() value
+        var current: Node = frontier.dequeue();
+
+        // If we've found the goal node, return path and cost to get there
+        if (goal(current)) {
+            result.path = expandPath(current);
+            result.cost = g.getValue(current);
+            return result;
+        }
+
+        visited.add(current);
+
+        var edges = graph.outgoingEdges(current);
+
+        for (var i: number = 0; i < edges.length; i++) {
+            var neighbour: Node = edges[i].to;
+
+            if (visited.contains(neighbour)) {
+                continue;
+            }
+
+            // cost from start node to neighbour
+            var oldScore: number = g.getValue(neighbour);
+
+            if (typeof (oldScore) === 'undefined')
+                oldScore = Infinity;
+
+            // cost from start node to neighbour via the current node
+            var newScore: number = g.getValue(current) + edges[i].cost;
+
+            // Workaround. PriorityQueue's contains() method uses
+            // the provided compare method to decide if something
+            // is contained in the queue which is not the
+            // indended behaviour here. Only want to use provided 
+            // compare method for ordering.
+            var frontierContains: boolean = false;
+            frontier.forEach(e => {
+                if (neighbour.toString() === e.toString()) {
+                    frontierContains = true;
+                }
+            });
+
+            if (!frontierContains) 
+                frontier.enqueue(neighbour);
+            else if (newScore >= oldScore) 
+                continue;
+
+            parent.setValue(neighbour, current);
+            g.setValue(neighbour, newScore);
+        }
+
+        timeStamp = new Date().getTime();
+        timeElapsed = timeStamp - startTime;
     }
     return result;
 }
@@ -128,11 +217,11 @@ class GridGraph implements Graph<GridNode> {
         for (var dx = -1; dx <= 1; dx++) {
             for (var dy = -1; dy <= 1; dy++) {
                 if (! (dx == 0 && dy == 0)) {
-                    var next = node.add({x:dx, y:dy});
-                    if (! this.walls.contains(next)) {
+                    var current = node.add({x:dx, y:dy});
+                    if (! this.walls.contains(current)) {
                         outgoing.push({
                             from: node,
-                            to: next,
+                            to: current,
                             cost: Math.sqrt(dx*dx + dy*dy)
                         });
                     }
