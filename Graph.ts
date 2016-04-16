@@ -72,27 +72,25 @@ function aStarSearch<Node> (
     var cameFrom :  collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
 
     var lowest : number ;
-    var neighbor : Edge<Node> = new Edge<Node>();
+    var neighbor : Edge<Node>;
     var tentative_gScore : number;
-    var values  : Array<Node> = new Array<Node>();
+    var openSetArray  : Array<Node>;
 
     var result : SearchResult<Node> = new SearchResult<Node>();
     result.path = new Array<Node>();
-    while( openSet.isEmpty() == false )
-    {
+    while( openSet.isEmpty() == false )  {
         // current := the node in openSet having the lowest fScore[] value
-        values = openSet.toArray();
+        openSetArray = openSet.toArray();
         lowest = 0;
-        for( var i : number = 0; i < values.length; ++i)
-        {
-            if( fScore.containsKey( values[i] ) && fScore.getValue( values[lowest])  > fScore.getValue( values[i]) ) {
+        for( var i : number = 0; i < openSetArray.length; ++i){
+            if( fScore.containsKey( openSetArray[i] ) && fScore.getValue( openSetArray[lowest])  > fScore.getValue( openSetArray[i]) ) {
               lowest = i;
             }
         }
-        current = values[lowest];
+        current = openSetArray[lowest];
 
         //goal found
-        if( goal( current) ){
+        if( goal( current) ) {
           result.cost = gScore.getValue( current );
 
           result.path.push( current)
@@ -107,28 +105,20 @@ function aStarSearch<Node> (
         openSet.remove(current);
         closedSet.add(current);
 
-
-
-        for( var i : number; i < graph.outgoingEdges(current).length; ++i )
-        {
+        for( var i : number; i < graph.outgoingEdges(current).length; ++i ) {
           neighbor = graph.outgoingEdges(current)[i];
           if ( closedSet.contains( neighbor.to) ) {
               continue		// Ignore the neighbors which are already evaluated.
           }
 
-
           // The distance from start to a neighbor
-          if( !gScore.containsKey( current ) ) {
-            throw new Error( "#aStarSearch - Distance is infinity/unknown" );
-          }
           tentative_gScore = gScore.getValue(current) + neighbor.cost;
 
           if( !openSet.contains(neighbor.to) ) {
               openSet.add(neighbor.to)
           }
-          else if( gScore.containsKey(neighbor.to)
-          && tentative_gScore >= gScore.getValue(neighbor.to) )
-          {
+          else if( gScore.containsKey(neighbor.to) //distance is not infinity
+          && tentative_gScore >= gScore.getValue(neighbor.to) ) {
               continue		// This is not a better path.
           }
           // This path is the best until now. Record it!
