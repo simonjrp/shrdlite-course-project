@@ -105,7 +105,7 @@ function aStarSearch<Node> (
         openSet.remove(current);
         closedSet.add(current);
 
-        for( var i : number; i < graph.outgoingEdges(current).length; ++i ) {
+        for( var i : number = 0; i < graph.outgoingEdges(current).length; ++i ) {
           neighbor = graph.outgoingEdges(current)[i];
           if ( closedSet.contains( neighbor.to) ) {
               continue		// Ignore the neighbors which are already evaluated.
