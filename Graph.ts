@@ -96,8 +96,9 @@ function aStarSearch<Node> (
 
     while( !frontierContains.isEmpty() && timeElapsed <= timeout )  {
 
-        //Since the pq dont have an update, a vertex may be addad several times
-        //Therefore, a set is used so no old vertex are left
+        //Since the pq dont have an update function
+        //a vertex may be addad several times
+        //The latest updated value will always be on the top before the others
         do {
           current = frontier.dequeue()
         }while( !frontierContains.contains(current) )
