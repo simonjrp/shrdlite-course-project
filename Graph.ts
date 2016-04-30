@@ -57,35 +57,35 @@ function aStarSearch<Node> (
     timeout : number
 ) : SearchResult<Node> {
 
-  var gScore  : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>();
-  gScore.setValue(start, 0)
+  var distanceFromStart  : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>();
+  distanceFromStart.setValue(start, 0)
 
-  var fScore :  collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
-  fScore.setValue(start, heuristics( start) )
+  var distanceToGoal :  collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
+  distanceToGoal.setValue(start, heuristics( start) )
 
   function compareCost(a : Node, b : Node) : number {
-    if (fScore.getValue(a) < fScore.getValue(b))
+    if (distanceToGoal.getValue(a) < distanceToGoal.getValue(b))
         return 1
-    else if (fScore.getValue(a) > fScore.getValue(b))
+    else if (distanceToGoal.getValue(a) > distanceToGoal.getValue(b))
         return -1
     else
         return 0
     };
 
     var current : Node;
-    var closedSet : collections.Set<Node> = new collections.Set<Node>();
+    var visited : collections.Set<Node> = new collections.Set<Node>();
 
-    var openSet : collections.PriorityQueue<Node> = new collections.PriorityQueue<Node>(compareCost) ;
-    var openSetContains : collections.Set<Node> = new collections.Set<Node>() ;
-    openSet.enqueue( start );
-    openSetContains.add( start )
+    var frontier : collections.PriorityQueue<Node> = new collections.PriorityQueue<Node>(compareCost) ;
+    var frontierContains : collections.Set<Node> = new collections.Set<Node>() ;
+    frontier.enqueue( start );
+    frontierContains.add( start )
 
 
 
     var cameFrom :  collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
 
-    var neighbor : Edge<Node>;
-    var new_distance : number;
+    var neighbour : Edge<Node>;
+    var distance_to_neighbour_from_start: number;
 
     var result : SearchResult<Node> = new SearchResult<Node>();
     result.path = new Array<Node>();
@@ -94,16 +94,18 @@ function aStarSearch<Node> (
     var timeElapsed: number = 0;
     var timeStamp: number = (new Date().getTime()) / 1000;
 
-    while( !openSetContains.isEmpty() && timeElapsed <= timeout )  {
+    while( !frontierContains.isEmpty() && timeElapsed <= timeout )  {
 
+        //Since the pq dont have an update, a vertex may be addad several times
+        //Therefore, a set is used so no old vertex are left
         do {
-          current = openSet.dequeue()
-        }while( !openSetContains.contains(current) )
-        openSetContains.remove( current )
-        closedSet.add(current);
+          current = frontier.dequeue()
+        }while( !frontierContains.contains(current) )
+        frontierContains.remove( current )
+        visited.add(current);
 
         if( goal( current) ) {
-          result.cost = gScore.getValue( current );
+          result.cost = distanceFromStart.getValue( current );
           result.path.push( current )
           while (cameFrom.containsKey( current) ) {
             current = cameFrom.getValue(current)
@@ -115,26 +117,25 @@ function aStarSearch<Node> (
 
 
         for( var i : number = 0; i < graph.outgoingEdges(current).length; ++i ) {
-          neighbor = graph.outgoingEdges(current)[i];
-          if ( closedSet.contains( neighbor.to) ) {
-              continue		// Ignore the neighbors which are already evaluated.
+          neighbour = graph.outgoingEdges(current)[i];
+          if ( visited.contains( neighbour.to) ) {
+              continue
           }
 
-          // The distance from start to a neighbor
-          new_distance = gScore.getValue(neighbor.from) + neighbor.cost;
+          distance_to_neighbour_from_start = distanceFromStart.getValue(neighbour.from) + neighbour.cost;
 
-          if (!openSetContains.contains( neighbor.to )) {
-            openSet.enqueue(neighbor.to);
-            openSetContains.add( neighbor.to )
+          if (!frontierContains.contains( neighbour.to )) {
+            frontierContains.add( neighbour.to )
           }
-          else if( new_distance >= gScore.getValue(neighbor.to) ) {
-              continue		// This is not a better path.
+          else if( distance_to_neighbour_from_start >= distanceFromStart.getValue(neighbour.to) ) {
+              continue
           }
-          // This path is the best until now. Record it!
-          cameFrom.setValue(neighbor.to, neighbor.from );
-          gScore.setValue(neighbor.to, new_distance );
-          fScore.setValue(neighbor.to, new_distance + heuristics(neighbor.to) );
-          openSet.enqueue(neighbor.to);
+
+          // This path is the best until now
+          cameFrom.setValue(neighbour.to, neighbour.from );
+          distanceFromStart.setValue(neighbour.to, distance_to_neighbour_from_start );
+          distanceToGoal.setValue(neighbour.to, distance_to_neighbour_from_start + heuristics(neighbour.to) );
+          frontier.enqueue(neighbour.to);
         } //for
 
         timeStamp = new Date().getTime() / 1000;
