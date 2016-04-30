@@ -90,7 +90,11 @@ function aStarSearch<Node> (
     var result : SearchResult<Node> = new SearchResult<Node>();
     result.path = new Array<Node>();
 
-    while( openSetContains.isEmpty() == false )  {
+    var startTime: number = (new Date().getTime()) / 1000;
+    var timeElapsed: number = 0;
+    var timeStamp: number = (new Date().getTime()) / 1000;
+
+    while( !openSetContains.isEmpty() && timeElapsed <= timeout )  {
 
         do {
           current = openSet.dequeue()
@@ -132,6 +136,9 @@ function aStarSearch<Node> (
           fScore.setValue(neighbor.to, new_distance + heuristics(neighbor.to) );
           openSet.enqueue(neighbor.to);
         } //for
+
+        timeStamp = new Date().getTime() / 1000;
+        timeElapsed = timeStamp - startTime;
     } //while
     throw new Error("#aStarSearch - No path was found");
 }
