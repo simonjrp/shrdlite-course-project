@@ -75,7 +75,7 @@ function aStarSearch<Node> (
     function expandPath(node: Node): Node[] {
         var parentNode: Node = parent.getValue(node);
         if (parentNode === start)
-            return [start,node];
+            return [];
         else
             var result = expandPath(parentNode);
             result.push(node);
@@ -104,56 +104,57 @@ function aStarSearch<Node> (
     while (!frontier.isEmpty() && timeElapsed <= timeout) {
         // Pick node with smallest f() = g() + h() value
         var current: Node = frontier.dequeue();
+
         // If we've found the goal node, return path and cost to get there
         if (goal(current)) {
             result.path = expandPath(current);
             result.cost = g.getValue(current);
-            console.log(g.getValue(current));
             return result;
         }
+
+        visited.add(current);
 
         var edges = graph.outgoingEdges(current);
 
         for (var i: number = 0; i < edges.length; i++) {
             var neighbour: Node = edges[i].to;
+
+            if (visited.contains(neighbour)) {
+                continue;
+            }
+
+            // cost from start node to neighbour
             var oldScore: number = g.getValue(neighbour);
+
             if (typeof (oldScore) === 'undefined')
                 oldScore = Infinity;
+
+            // cost from start node to neighbour via the current node
             var newScore: number = g.getValue(current) + edges[i].cost;
-            
+
             // Workaround. PriorityQueue's contains() method uses
             // the provided compare method to decide if something
             // is contained in the queue which is not the
             // indended behaviour here. Only want to use provided 
             // compare method for ordering.
             var frontierContains: boolean = false;
-
             frontier.forEach(e => {
                 if (neighbour.toString() === e.toString()) {
                     frontierContains = true;
                 }
             });
 
-            if(frontierContains) {
-                if (oldScore <= newScore) {
-                    continue;
-                }
-            } else if(visited.contains(neighbour)) {
-                if (oldScore <= newScore) {
-                    continue;
-                }
-                visited.remove(neighbour);
+            if (!frontierContains) 
                 frontier.enqueue(neighbour);
-            } else {
-                frontier.enqueue(neighbour);
-            }
-            g.setValue(neighbour, newScore);
+            else if (newScore >= oldScore) 
+                continue;
+
             parent.setValue(neighbour, current);
+            g.setValue(neighbour, newScore);
         }
-        visited.add(current);
+
         timeStamp = new Date().getTime();
         timeElapsed = timeStamp - startTime;
     }
-    console.log(result.path);
     return result;
 }
