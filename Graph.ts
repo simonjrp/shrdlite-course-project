@@ -99,9 +99,11 @@ function aStarSearch<Node>(
     var timeStamp: number = new Date().getTime() / 1000;
 
     // Local variables
-    var current, neighbour: Node;
+    var current: Node;
+    var neighbour: Node;
     var edges: Edge<Node>[];
-    var oldCost, newCost: number;
+    var oldCost: number;
+    var newCost: number;
 
     // Add the initial starting node
     g.setValue(start, 0);
