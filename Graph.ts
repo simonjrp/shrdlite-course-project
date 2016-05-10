@@ -47,9 +47,50 @@ class SearchResult<Node> {
 * @param timeout Maximum time (in seconds) to spend performing A\* search.
 * @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
 */
-
-
 function aStarSearch<Node> (
+    graph : Graph<Node>,
+    start : Node,
+    goal : (n:Node) => boolean,
+    heuristics : (n:Node) => number,
+    timeout : number
+) : SearchResult<Node> {
+
+// BDF
+var cameFrom  :  collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
+var neighbour : Edge<Node>;
+var visited   : collections.Set<Node> = new collections.Set<Node>();
+var frontier  : collections.Queue<Node>  = new collections.Queue<Node>();
+
+var result : SearchResult<Node> = new SearchResult<Node>();
+result.path = new Array<Node>();
+
+frontier.add( start );
+visited.add( start );
+
+while( !frontier.isEmpty()) {
+  for( var i : number = 0; i < graph.outgoingEdges(frontier.dequeue()).length; ++i ) {
+    neighbour = graph.outgoingEdges(current)[i];
+    if( goal( neighbour.to ) ) {
+      result.cost = distanceFromStart.getValue( current );
+      result.path.push( current )
+      while (cameFrom.containsKey( current) ) {
+        current = cameFrom.getValue(current)
+        result.path.push(current)
+      }
+      result.path = result.path.reverse();
+      return result;
+    }
+
+    if( !visited.contains( neighbour.to )) {
+        visited.add( neighbour.to);
+        frontier.add( neighbour.to);
+        cameFrom.add( neighbour.to, neighbour.from )
+    }
+  }
+}
+}
+
+function ok<Node> (
     graph : Graph<Node>,
     start : Node,
     goal : (n:Node) => boolean,
