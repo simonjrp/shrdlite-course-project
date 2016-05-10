@@ -153,6 +153,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             if (isMatch(filter,obj))
                 result.push(n);
         }
+
         return result;
     }
 
@@ -190,6 +191,33 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return -1;
     }
 
+    function onTopUnder(location: Parser.Location, state: WorldState, relation :string) : string[] {
+        var result: string[] = [];
+
+        if(location.entity.object.form === "floor" && relation === "ontop") {
+            state.stacks.forEach(stack => {
+                   if(stack.length > 0)
+                       result.push(stack[0]);
+               });
+            } else {
+               var delimiters: string[] = filter(location.entity.object, state);
+               console.log(delimiters);
+               delimiters.forEach(delimiter => {
+                   state.stacks.forEach(stack => {
+                       var index = contains(stack, delimiter);
+                       if (index != -1) {
+                           if(relation === "ontop") {
+                               result = result.concat(stack.slice(index)); 
+                           } else {
+                               result = result.concat(stack.slice(0, index));
+                           }
+                       }
+                   })
+               });
+           }   
+        return result;
+    }
+
     function filter_relations(location: Parser.Location, state: WorldState): string[] {
         var result: string[] = [];
         switch(location.relation)
@@ -201,26 +229,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "inside":
                 throw "not implemented";
             case "ontop":
-                if(location.entity.object.form === "floor") {
-                    state.stacks.forEach(stack => {
-                        if(stack.length > 0)
-                            result.push(stack[0]);
-                    });
-                } else {
-                    var onTopObj: string[] = filter(location.entity.object, state);
-                    console.log(onTopObj);
-                    onTopObj.forEach(bottom => {
-                        state.stacks.forEach(stack => {
-                            var index = contains(stack, bottom);
-                            if (index != -1) {
-                                result.concat(stack.slice(index));
-                            }
-                        })
-                    });
-                }
+                result = onTopUnder(location, state, "ontop");
                 break;
             case "under":
-                throw "not implemented";
+                result = onTopUnder(location, state, "under");
+                break;
             case "beside":
                 throw "not implemented";
             case "above":
