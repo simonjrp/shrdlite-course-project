@@ -106,10 +106,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        console.log("GIVEN COMMAND AND STATE:");
-        console.log(cmd);
-        console.log(state);
-
         var interpretation: DNFFormula = [];
 
         switch(cmd.command)
@@ -122,10 +118,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "move":
                 var objsToMove = filter(cmd.entity.object, state);
                 var destinations = filter(cmd.location.entity.object, state);
-                console.log("ToMove:");
-                console.log(objsToMove);
-                console.log("Dest:");
-                console.log(destinations);
+           
                 objsToMove.forEach(objToMove => {
                     destinations.forEach(destination => {
                         interpretation.push([{
