@@ -127,11 +127,17 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
                 objsToMove.forEach(objToMove => {
                     destinations.forEach(destination => {
-                        interpretation.push([{
-                            polarity: true,
-                            relation: cmd.location.relation,
-                            args: [objToMove, destination]
-                        }]);
+                        if(isValid(state.objects[objToMove],
+                            state.objects[destination],
+                            cmd.location.relation)) {
+                            
+                            interpretation.push([{
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [objToMove, destination]
+                            }]);
+                        }
+                    
                     });
                 });
                 break;
@@ -139,6 +145,33 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 throw "Can't recognize action";
         }
         return interpretation;
+    }
+
+    function isValid(objToMove: Parser.Object, destination: Parser.Object, relation: string): Boolean {
+        if (destination.form === "ball") {
+            return false;
+        } else if (objToMove.size === "large" && destination.size === "small") {
+            return false;
+        } else if (objToMove.form === "ball"
+            && (destination.form != "box" || destination.form != "floor")) {
+            return false;
+        } else if (destination.form === "box" &&
+            (objToMove.form === "plank"
+                || objToMove.form === "pyramid"
+                || (objToMove.form === "box"
+                    && objToMove.size === "large"
+                    && destination.size === "small"))) {
+            return false;
+        } else if (objToMove.form === "box" && objToMove.size === "large"
+            && (destination.form === "brick" || destination.form === "pyramid")) {
+            return false;
+
+        } else if (objToMove.form === "box" && objToMove.size === "large"
+            && destination.form == "pyramid" && destination.size === "large") {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     function filter(filter: Parser.Object, state: WorldState): string[] {
@@ -344,4 +377,5 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 throw "not implemented";
         }
     }
+
 }
