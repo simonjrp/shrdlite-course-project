@@ -192,10 +192,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return -1;
     }
 
-    function onTopUnder(location: Parser.Location, state: WorldState, relation :string) : string[] {
+    function aboveUnder(location: Parser.Location, state: WorldState, relation :string) : string[] {
         var result: string[] = [];
 
-        if(location.entity.object.form === "floor" && relation === "ontop") {
+        if(location.entity.object.form === "floor" && relation === "above") {
             state.stacks.forEach(stack => {
                    if(stack.length > 0)
                        result.push(stack[0]);
@@ -207,7 +207,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                    state.stacks.forEach(stack => {
                        var index = contains(stack, delimiter);
                        if (index != -1) {
-                           if(relation === "ontop") {
+                           if(relation === "above") {
                                result = result.concat(stack.slice(index));
                            } else {
                                result = result.concat(stack.slice(0, index));
@@ -237,6 +237,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
       return result;
   }
+
     function leftRightOf(location: Parser.Location, state: WorldState, relation :string) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
@@ -299,6 +300,24 @@ console.log( location.entity.object )
     return result;
   }
 
+  function onTop( location: Parser.Location, state: WorldState) : string[] {
+    var result: string[] = [];
+
+     var delimiters: string[] = filter(location.entity.object, state);
+     console.log(delimiters);
+     delimiters.forEach(delimiter => {
+         state.stacks.forEach(stack => {
+             var index = contains(stack, delimiter);
+             if (index != -1) {
+               if( index + 1  < stack.length ) {
+                 result = [stack[ index + 1] ]
+               }
+             }
+        } )
+      })
+    return result;
+}
+
     function filter_relations(location: Parser.Location, state: WorldState): string[] {
         switch(location.relation)
         {
@@ -308,20 +327,16 @@ console.log( location.entity.object )
                 return leftRightOf( location, state, "right");
             case "inside":
                 return inside(location, state);
-            case "ontop":
-                return onTopUnder(location, state, "ontop");
+            case "above":
+                return aboveUnder(location, state, "above");
             case "under":
-                return onTopUnder(location, state, "under");
+                return aboveUnder(location, state, "under");
             case "beside":
                   return besideOf(location, state);
-            case "above":
-                var tmp = onTopUnder(location, state, "ontop");
-                if( tmp.length != 0)
-                  return [tmp[0]]
-                return [];
+            case "ontop":
+                return onTop(location, state );
             default:
                 throw "not implemented";
         }
     }
-
 }
