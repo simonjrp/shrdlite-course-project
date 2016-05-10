@@ -142,7 +142,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             used_objects = filter_relations(filter.location, state);
         }
         if (used_objects.length === 0)
-            throw "No interpretation found!";
+            throw "Couldn't find any matching object";
 
         var obj: Parser.Object;
 
@@ -173,12 +173,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         } else {
             color_match = filter.object.color == null
                 || obj.color === filter.object.color;
-            form_match = filter.form == null
+            form_match = filter.object.form == null
                 || obj.form === filter.object.form
-                || filter.form === "anyform";
-            size_match = filter.size == null
+                || filter.object.form === "anyform";
+            size_match = filter.object.size == null
                 || obj.size === filter.object.size;
         }
+
         return color_match && form_match && size_match;
     }
 
@@ -218,8 +219,26 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return result;
     }
 
-    function filter_relations(location: Parser.Location, state: WorldState): string[] {
+    function inside(location: Parser.Location, state: WorldState): string[] {
         var result: string[] = [];
+        var potentialBoxes: string[] = filter(location.entity.object, state);
+        console.log("potentialBoxes");
+        console.log(potentialBoxes);
+        potentialBoxes.forEach(potentialBox => {
+            state.stacks.forEach(stack => {
+                var index: number = contains(stack, potentialBox);
+                if(index > -1) {
+                    if(index+1 < stack.length) {
+                        result.push(stack[index + 1]);
+                    }
+                }
+            });
+        });
+
+        return result;
+    }
+
+    function filter_relations(location: Parser.Location, state: WorldState): string[] {
         switch(location.relation)
         {
             case "leftof":
@@ -227,13 +246,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "rightof":
                 throw "not implemented";
             case "inside":
-                throw "not implemented";
+                return inside(location, state);
             case "ontop":
-                result = onTopUnder(location, state, "ontop");
-                break;
+                return onTopUnder(location, state, "ontop");
             case "under":
-                result = onTopUnder(location, state, "under");
-                break;
+                return onTopUnder(location, state, "under");
             case "beside":
                 throw "not implemented";
             case "above":
@@ -241,7 +258,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             default:
                 throw "not implemented";
         }
-        return result;
     }
 
 }
