@@ -106,6 +106,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
+        console.log("GIVEN COMMAND AND STATE:");
+        console.log(cmd);
+        console.log(state);
+
         var interpretation: DNFFormula = [];
 
         switch(cmd.command)
@@ -118,6 +122,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "move":
                 var objsToMove = filter(cmd.entity.object, state);
                 var destinations = filter(cmd.location.entity.object, state);
+                console.log("ToMove:");
+                console.log(objsToMove);
+                console.log("Dest:");
+                console.log(destinations);
                 objsToMove.forEach(objToMove => {
                     destinations.forEach(destination => {
                         interpretation.push([{
@@ -296,18 +304,25 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
   function onTop( location: Parser.Location, state: WorldState) : string[] {
     var result: string[] = [];
-
-     var delimiters: string[] = filter(location.entity.object, state);
-     delimiters.forEach(delimiter => {
-         state.stacks.forEach(stack => {
-             var index = contains(stack, delimiter);
-             if (index != -1) {
-               if( index + 1  < stack.length ) {
-                 result = [stack[ index + 1] ]
-               }
-             }
-        } )
-      })
+    if (location.entity.object.form === "floor") {
+        state.stacks.forEach(stack => {
+            if (stack.length > 0)
+                result.push(stack[0]);
+        });
+    } else {
+        var delimiters: string[] = filter(location.entity.object, state);
+        delimiters.forEach(delimiter => {
+            state.stacks.forEach(stack => {
+                var index = contains(stack, delimiter);
+                if (index != -1) {
+                    if (index + 1 < stack.length) {
+                        result = [stack[index + 1]]
+                    }
+                }
+            })
+        })
+    }
+     
     return result;
 }
 
