@@ -3,12 +3,12 @@
 
 /**
 * Interpreter module
-* 
+*
 * The goal of the Interpreter module is to interpret a sentence
 * written by the user in the context of the current world state. In
 * particular, it must figure out which objects in the world,
 * i.e. which elements in the `objects` field of WorldState, correspond
-* to the ones referred to in the sentence. 
+* to the ones referred to in the sentence.
 *
 * Moreover, it has to derive what the intended goal state is and
 * return it as a logical formula described in terms of literals, where
@@ -34,7 +34,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 * @param parses List of parses produced by the Parser.
 * @param currentState The current state of the world.
 * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
-*/    
+*/
     export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
         var errors : Error[] = [];
         var interpretations : InterpretationResult[] = [];
@@ -76,7 +76,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         polarity : boolean;
 	/** The name of the relation in question. */
         relation : string;
-	/** The arguments to the relation. Usually these will be either objects 
+	/** The arguments to the relation. Usually these will be either objects
      * or special strings such as "floor" or "floor-N" (where N is a column) */
         args : string[];
     }
@@ -157,7 +157,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return result;
     }
 
-    function isMatch(filter: Parser.Object, obj: Parser.Object) {
+    function isMatch(filter: Parser.Object, obj: Parser.Object) : boolean{
         var color_match: boolean;
         var form_match: boolean;
         var size_match: boolean;
@@ -208,43 +208,104 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                        var index = contains(stack, delimiter);
                        if (index != -1) {
                            if(relation === "ontop") {
-                               result = result.concat(stack.slice(index)); 
+                               result = result.concat(stack.slice(index));
                            } else {
                                result = result.concat(stack.slice(0, index));
                            }
                        }
                    })
                });
-           }   
+           }
         return result;
     }
 
     function inside(location: Parser.Location, state: WorldState): string[] {
-        var result: string[] = [];
-        var potentialBoxes: string[] = filter(location.entity.object, state);
-        console.log("potentialBoxes");
-        console.log(potentialBoxes);
-        potentialBoxes.forEach(potentialBox => {
-            state.stacks.forEach(stack => {
-                var index: number = contains(stack, potentialBox);
-                if(index > -1) {
-                    if(index+1 < stack.length) {
-                        result.push(stack[index + 1]);
-                    }
-                }
-            });
-        });
+      var result: string[] = [];
+      var potentialBoxes: string[] = filter(location.entity.object, state);
+      console.log("potentialBoxes");
+      console.log(potentialBoxes);
+      potentialBoxes.forEach(potentialBox => {
+          state.stacks.forEach(stack => {
+              var index: number = contains(stack, potentialBox);
+              if(index > -1) {
+                  if(index+1 < stack.length) {
+                      result.push(stack[index + 1]);
+                  }
+              }
+          });
+      });
 
+      return result;
+  }
+    function leftRightOf(location: Parser.Location, state: WorldState, relation :string) : string[] {
+        var result: string[] = [];
+        var leftOfObj: string[] = filter(location.entity.object, state);
+        var projectX : number;
+        console.log( location.entity.object )
+        if( relation == "left" ) {
+          projectX = 0
+        } else if ( relation == "right") {
+          projectX = state.stacks.length - 1;
+        } else {
+            throw  "not left of right"
+        }
+
+        leftOfObj.forEach(bottom => {
+          for( var i :number = 0 ; i < state.stacks.length; ++i ) {
+            if( contains(state.stacks[i], bottom) != -1
+              && i != projectX ) {
+              if( relation == "left" ) {
+                for( var x : number = 0; x < i; ++x ) {
+                  console.log(state.stacks[x])
+                  result = result.concat(state.stacks[x]);
+                }
+              } else {
+                for( var x : number = i + 1; x < state.stacks.length; ++x ) {
+                  console.log(state.stacks[x])
+                  result = result.concat(state.stacks[x]);
+                }
+              }
+              break;
+            }
+          }
+        });
         return result;
-    }
+      }
+
+      function besideOf( location: Parser.Location, state: WorldState) : string[] {
+        var result: string[] = [];
+        var leftOfObj: string[] = filter(location.entity.object, state);
+        var projectX : number;
+console.log( location.entity.object )
+
+
+        leftOfObj.forEach(bottom => {
+          for( var i :number = 0 ; i < state.stacks.length; ++i ) {
+            if( contains(state.stacks[i], bottom) != -1 ) {
+              if( i != 0 ) {
+                console.log(state.stacks[i - 1])
+                result = result.concat(state.stacks[i - 1]);
+              }
+
+              if( i != state.stacks.length - 1 ) {
+                console.log(state.stacks[i + 1])
+                result = result.concat(state.stacks[i + 1]);
+              }
+            }
+            break;
+        }
+      }
+    );
+    return result;
+  }
 
     function filter_relations(location: Parser.Location, state: WorldState): string[] {
         switch(location.relation)
         {
             case "leftof":
-                throw "not implemented";
+                return leftRightOf( location, state, "left");
             case "rightof":
-                throw "not implemented";
+                return leftRightOf( location, state, "right");
             case "inside":
                 return inside(location, state);
             case "ontop":
@@ -252,13 +313,15 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "under":
                 return onTopUnder(location, state, "under");
             case "beside":
-                throw "not implemented";
+                  return besideOf(location, state);
             case "above":
-                throw "not implemented";
+                var tmp = onTopUnder(location, state, "ontop");
+                if( tmp.length != 0)
+                  return [tmp[0]]
+                return [];
             default:
                 throw "not implemented";
         }
     }
 
 }
-
