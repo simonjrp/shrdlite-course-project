@@ -106,10 +106,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        console.log("GIVEN COMMAND AND STATE:");
-        console.log(cmd);
-        console.log(state);
-
         var interpretation: DNFFormula = [];
 
         switch(cmd.command)
@@ -120,15 +116,20 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 });
                 break;
             case "move":
-                // var obj_to_move = filter_objects(cmd.entity.object, state);
-                // var move_to = filter_objects(cmd.location.entity.object, state);
-                // obj_to_move.forEach(from => {
-                //     move_to.forEach(to => {
-                //         interpretation.push([])
-                //     });
-                // });
+                var objsToMove = filter(cmd.entity.object, state);
+                var destinations = filter(cmd.location.entity.object, state);
+                objsToMove.forEach(objToMove => {
+                    destinations.forEach(destination => {
+                        interpretation.push([{
+                            polarity: true,
+                            relation: cmd.location.relation,
+                            args: [objToMove, destination]
+                        }]);
+                    });
+                });
+                break;
             default:
-                throw "Action not implemented";
+                throw "Can't recognize action";
         }
         return interpretation;
     }
@@ -153,6 +154,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             if (isMatch(filter,obj))
                 result.push(n);
         }
+
+        if (result.length === 0)
+            throw "Couldn't find any matching object";
 
         return result;
     }
@@ -202,7 +206,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                });
             } else {
                var delimiters: string[] = filter(location.entity.object, state);
-               console.log(delimiters);
                delimiters.forEach(delimiter => {
                    state.stacks.forEach(stack => {
                        var index = contains(stack, delimiter);
@@ -222,8 +225,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function inside(location: Parser.Location, state: WorldState): string[] {
       var result: string[] = [];
       var potentialBoxes: string[] = filter(location.entity.object, state);
-      console.log("potentialBoxes");
-      console.log(potentialBoxes);
       potentialBoxes.forEach(potentialBox => {
           state.stacks.forEach(stack => {
               var index: number = contains(stack, potentialBox);
@@ -242,7 +243,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
         var projectX : number;
-        console.log( location.entity.object )
         if( relation == "left" ) {
           projectX = 0
         } else if ( relation == "right") {
@@ -257,12 +257,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
               && i != projectX ) {
               if( relation == "left" ) {
                 for( var x : number = 0; x < i; ++x ) {
-                  console.log(state.stacks[x])
                   result = result.concat(state.stacks[x]);
                 }
               } else {
                 for( var x : number = i + 1; x < state.stacks.length; ++x ) {
-                  console.log(state.stacks[x])
                   result = result.concat(state.stacks[x]);
                 }
               }
@@ -277,19 +275,15 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
         var projectX : number;
-console.log( location.entity.object )
-
 
         leftOfObj.forEach(bottom => {
           for( var i :number = 0 ; i < state.stacks.length; ++i ) {
             if( contains(state.stacks[i], bottom) != -1 ) {
               if( i != 0 ) {
-                console.log(state.stacks[i - 1])
                 result = result.concat(state.stacks[i - 1]);
               }
 
               if( i != state.stacks.length - 1 ) {
-                console.log(state.stacks[i + 1])
                 result = result.concat(state.stacks[i + 1]);
               }
             }
@@ -304,7 +298,6 @@ console.log( location.entity.object )
     var result: string[] = [];
 
      var delimiters: string[] = filter(location.entity.object, state);
-     console.log(delimiters);
      delimiters.forEach(delimiter => {
          state.stacks.forEach(stack => {
              var index = contains(stack, delimiter);
