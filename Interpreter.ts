@@ -118,7 +118,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             case "move":
                 var objsToMove = filter(cmd.entity.object, state);
                 var destinations = filter(cmd.location.entity.object, state);
-           
+                
+                if(cmd.location.entity.object.form === "floor")
+                    destinations.push("floor");
+
+                if (objsToMove.length === 0 || destinations.length === 0)
+                    throw "Couldn't find any matching object";
+                
                 objsToMove.forEach(objToMove => {
                     destinations.forEach(destination => {
                         interpretation.push([{
@@ -155,9 +161,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             if (isMatch(filter,obj))
                 result.push(n);
         }
-
-        if (result.length === 0)
-            throw "Couldn't find any matching object";
 
         return result;
     }
