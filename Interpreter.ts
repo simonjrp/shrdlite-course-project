@@ -106,15 +106,129 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        // This returns a dummy interpretation involving two random objects in the world
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
+        console.log("GIVEN COMMAND AND STATE:");
+        console.log(cmd);
+        console.log(state);
+
+        var interpretation: DNFFormula = [];
+
+        switch(cmd.command)
+        {
+            case "take":
+                filter(cmd.entity.object, state).forEach(obj => {
+                    interpretation.push([{ polarity: true, relation: "holding", args: [obj] }])
+                });
+                break;
+            case "move":
+                // var obj_to_move = filter_objects(cmd.entity.object, state);
+                // var move_to = filter_objects(cmd.location.entity.object, state);
+                // obj_to_move.forEach(from => {
+                //     move_to.forEach(to => {
+                //         interpretation.push([])
+                //     });
+                // });
+            default:
+                throw "Action not implemented";
+        }
         return interpretation;
+    }
+
+    function filter(filter: Parser.Object, state: WorldState): string[] {
+        var result: string[] = [];
+        var used_objects: string[];
+        if(filter.location === null || typeof(filter.location) === "undefined") {
+            used_objects = Array.prototype.concat.apply([], state.stacks);
+        } else {
+            used_objects = filter_relations(filter.location, state);
+        }
+        if (used_objects.length === 0)
+            throw "No interpretation found!";
+
+        var obj: Parser.Object;
+
+        // Filter based on properties
+
+        for(var n of used_objects) {
+            obj = state.objects[n];
+            if (isMatch(filter,obj))
+                result.push(n);
+        }
+        return result;
+    }
+
+    function isMatch(filter: Parser.Object, obj: Parser.Object) {
+        var color_match: boolean;
+        var form_match: boolean;
+        var size_match: boolean;
+
+        if(filter.object === null || typeof(filter.object) === "undefined") {
+            color_match = filter.color == null
+                || obj.color === filter.color;
+            form_match = filter.form == null
+                || obj.form === filter.form
+                || filter.form === "anyform";
+            size_match = filter.size == null
+                || obj.size === filter.size;
+        } else {
+            color_match = filter.object.color == null
+                || obj.color === filter.object.color;
+            form_match = filter.form == null
+                || obj.form === filter.object.form
+                || filter.form === "anyform";
+            size_match = filter.size == null
+                || obj.size === filter.object.size;
+        }
+        return color_match && form_match && size_match;
+    }
+
+    function contains(array: Object[], obj: Object) : number {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === obj)
+                return i;
+        }
+
+        return -1;
+    }
+
+    function filter_relations(location: Parser.Location, state: WorldState): string[] {
+        var result: string[] = [];
+        switch(location.relation)
+        {
+            case "leftof":
+                throw "not implemented";
+            case "rightof":
+                throw "not implemented";
+            case "inside":
+                throw "not implemented";
+            case "ontop":
+                if(location.entity.object.form === "floor") {
+                    state.stacks.forEach(stack => {
+                        if(stack.length > 0)
+                            result.push(stack[0]);
+                    });
+                } else {
+                    var onTopObj: string[] = filter(location.entity.object, state);
+                    console.log(onTopObj);
+                    onTopObj.forEach(bottom => {
+                        state.stacks.forEach(stack => {
+                            var index = contains(stack, bottom);
+                            if (index != -1) {
+                                result.concat(stack.slice(index));
+                            }
+                        })
+                    });
+                }
+                break;
+            case "under":
+                throw "not implemented";
+            case "beside":
+                throw "not implemented";
+            case "above":
+                throw "not implemented";
+            default:
+                throw "not implemented";
+        }
+        return result;
     }
 
 }
