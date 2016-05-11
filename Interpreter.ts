@@ -184,6 +184,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             && destination.form === "table"
             && relation === "ontop") {
             return false;
+        } else if ((relation === "leftof" || relation === "rightof")
+            && objToMove === destination) {
+            return false;
         }
         return true;
     }
