@@ -133,6 +133,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState) : DNFFormula {
         var interpretation: DNFFormula = [];
+        state.objects["floor"] = { "form": "floor", "size": null, "color": null };
+
         switch (cmd.command) {
             case takeCmd:
                 filter(cmd.entity.object, state).forEach(obj => {
@@ -161,18 +163,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                         }
                     }
                 }
-                /*
-                objsToMove.forEach(objToMove => {
-                    destinations.forEach(destination => {
-                        if (isValid(state.objects[objToMove], state.objects[destination],
-                                                    cmd.location.relation)) {
-                            interpretation.push([{ polarity: true,
-                                  relation: cmd.location.relation,
-                                  args: [objToMove, destination]}]);
-                        }
-                    });
-                });
-                */
                 break;
             default:
                 throw "Cannot recognize actions";
@@ -190,37 +180,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
               && destination.size === "small"
               && relation === "inside") {
             return false;
+        } else if (objToMove.form === "ball"
+            && destination.form === "table"
+            && relation === "ontop") {
+            return false;
         }
-
-      //  if (objToMove.form === destination.form
-      //      && objToMove.location === destination.location
-        //    && objToMove.size === destination.size
-      //      && objToMove.color === destination.color && relation === 'leftof') {
-      //        return false;
-        //    }
-
-      // if (destination.form === "ball" && relation === "ontop") { // bad condition
-      //
-      //    return false;
-      //}
-      //else if (objToMove.form === "ball"
-      //      && (destination.form !== "box" || destination.form !== floor && (relation === "inside"))) {
-          //  return false;
-        //}
-              /*else if (destination.form === "box" &&
-            (objToMove.form === "plank"
-                || objToMove.form === "pyramid"
-                || objToMove.form === "box")
-                    && objToMove.size === destination.size) {
-            return false;
-        } else if (objToMove.form === "box" && objToMove.size === "large"
-                  && (destination.form === "brick" || destination.form === "pyramid")
-                  && destination.size === "small") {
-            return false;
-        } else if (objToMove.form === "box" && objToMove.size === "large"
-            && destination.form == "pyramid" && destination.size === "large") {
-            return false;
-        } */
         return true;
     }
 
