@@ -148,10 +148,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                     destinations.push(floor);
                 }
 
-                if (objsToMove.length === 0 || destinations.length === 0) {
-                    throw "Couldn't find any matching object";
-                }
-
                 // imperative style loop seems more readable
                 for (var obj of objsToMove) {
                     for (var dest of destinations) {
@@ -184,7 +180,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             && destination.form === "table"
             && relation === "ontop") {
             return false;
-        } else if ((relation === "leftof" || relation === "rightof")
+        } else if ((relation === "leftof"
+            || relation === "rightof"
+            || relation === "beside")
             && objToMove === destination) {
             return false;
         }
