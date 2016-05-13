@@ -173,29 +173,70 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function isValid(objToMove: Parser.Object, destination: Parser.Object,
                                                         rel: string): boolean {
         var relation: Rel = (<any>Rel)[rel];
+
+        // "Small objects cannot support large objects."
         if (objToMove.size === "large"
-              && destination.size === "small"
-              && (relation === Rel.inside
-                  || relation === Rel.ontop)) {
+            && destination.size === "small"
+            && (relation === Rel.inside
+            || relation === Rel.ontop)) {
             return false;
-        } else if (objToMove.form === "ball"
+        } 
+
+        // "Balls must be in boxes or on the floor, otherwise they roll away."
+        if (objToMove.form === "ball"
             && (destination.form != "box" 
                 && destination.form != "floor" 
                 && (relation === Rel.ontop || relation === Rel.inside))) {
             return false;
-        } else if ((relation === Rel.leftof
-            || relation === Rel.rightof
-            || relation === Rel.beside)
-            && objToMove === destination) {
-            return false;
-        } else if (destination.form === "box" && relation === Rel.ontop) {
-            // Not sure if we should just change the relation to "inside" here
-            // or just throw an error
-            return false;
-        } else if (destination.form === "ball"
+        } 
+
+
+        // "Objects are “inside” boxes, but “ontop” of other objects."
+        if (destination.form === "box" && relation === Rel.ontop) {
+          return false;
+        } 
+
+        // "Balls cannot support anything."
+        if (destination.form === "ball"
             && (relation === Rel.ontop
                 || relation === Rel.inside)){
             return false;
+        }
+
+        // "Boxes cannot contain pyramids, planks or boxes of the same size."
+        if (destination.form === "box"
+            && relation === Rel.inside
+            && (objToMove.form === "pyramid"
+                || objToMove.form === "plank"
+                || (objToMove.form === "box" 
+                    && objToMove.size === destination.size))) {
+            return false;
+        }
+
+        // "Small boxes cannot be supported by small bricks or pyramids."
+        if ((objToMove.form === "box"
+            || objToMove.form === "brick") 
+            && objToMove.size === "small"
+            && relation === Rel.ontop
+            && destination.form === "pyramid"
+            && destination.size === "small") {
+            return false;
+        }
+
+        // "Large boxes cannot be supported by large pyramids."
+        // We assume that this is badly formulated because a strict 
+        // implementation of this rule would mean that large boxes can be on top
+        // of small pyramids, which doesn't make sense.
+        if (objToMove.form === "box"
+            && objToMove.size === "large"
+            && destination.form === "pyramid")
+            return false;
+
+        if ((relation === Rel.leftof
+            || relation === Rel.rightof
+            || relation === Rel.beside)
+            && objToMove === destination) {
+          return false;
         }
         return true;
     }
@@ -297,13 +338,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function leftRightOf(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
-        var limit: number = 0;  // the bound for smallest or highest index in the stack array
-        if (relation === Rel.rightof) {
-            limit = state.stacks.length - 1;
-        }
-        leftOfObj.forEach(bottom => {
+        
+        leftOfObj.forEach(delimiter => {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
-                if (contains(state.stacks[i], bottom) != -1 && i != limit) {
+                if (contains(state.stacks[i], delimiter) != -1) {
                     if (relation === Rel.leftof) {
                         for (var x: number = 0; x < i; ++x ) {
                             result = result.concat(state.stacks[x]);
