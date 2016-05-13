@@ -191,6 +191,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             // Not sure if we should just change the relation to "inside" here
             // or just throw an error
             return false;
+        } else if (destination.form === "ball"
+            && (relation === Rel.ontop
+                || relation === Rel.inside)){
+            return false;
         }
         return true;
     }
