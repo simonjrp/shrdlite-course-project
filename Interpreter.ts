@@ -175,7 +175,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         var relation: Rel = (<any>Rel)[rel];
         if (objToMove.size === "large"
               && destination.size === "small"
-              && relation === Rel.inside) {
+              && (relation === Rel.inside
+                  || relation === Rel.ontop)) {
             return false;
         } else if (objToMove.form === "ball"
             && (destination.form != "box" 
