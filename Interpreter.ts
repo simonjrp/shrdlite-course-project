@@ -3,12 +3,12 @@
 
 /**
 * Interpreter module
-* 
+*
 * The goal of the Interpreter module is to interpret a sentence
 * written by the user in the context of the current world state. In
 * particular, it must figure out which objects in the world,
 * i.e. which elements in the `objects` field of WorldState, correspond
-* to the ones referred to in the sentence. 
+* to the ones referred to in the sentence.
 *
 * Moreover, it has to derive what the intended goal state is and
 * return it as a logical formula described in terms of literals, where
@@ -34,8 +34,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 * @param parses List of parses produced by the Parser.
 * @param currentState The current state of the world.
 * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
-*/    
-    export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
+*/
+    export function interpret(parses : Parser.ParseResult[],
+                                    currentState : WorldState) : InterpretationResult[] {
         var errors : Error[] = [];
         var interpretations : InterpretationResult[] = [];
         parses.forEach((parseresult) => {
@@ -47,6 +48,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 errors.push(err);
             }
         });
+
         if (interpretations.length) {
             return interpretations;
         } else {
@@ -76,7 +78,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         polarity : boolean;
 	/** The name of the relation in question. */
         relation : string;
-	/** The arguments to the relation. Usually these will be either objects 
+	/** The arguments to the relation. Usually these will be either objects
      * or special strings such as "floor" or "floor-N" (where N is a column) */
         args : string[];
     }
@@ -93,29 +95,331 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     }
 
     //////////////////////////////////////////////////////////////////////
-    // private functions
+    // private
+
+    /*
+    * Core command instructions
+    */
+    const moveCmd = "move"
+    const takeCmd = "take"
+
+    // could add for all keywords, idk...
+    const floor = "floor"
+
+    /*
+    * An enumeration of the various relations
+    */
+    enum Rel {
+        leftof,
+        rightof,
+        above,
+        ontop,
+        under,
+        beside,
+        inside
+    }
+
     /**
-     * The core interpretation function. The code here is just a
-     * template; you should rewrite this function entirely. In this
-     * template, the code produces a dummy interpretation which is not
-     * connected to `cmd`, but your version of the function should
-     * analyse cmd in order to figure out what interpretation to
-     * return.
-     * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
+     * Based on a command and the given state of the world, this function
+     * returns a list of interpretations represting a disjunctive normal form
+     * formula.
+     *
+     * @param cmd The actual command. Note that it is *not* a string, but rather an object of type
+     * `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
-     * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
+     * @returns A list of list of Literal, representing a formula in disjunctive normal form
+     * (disjunction of conjunctions). See the dummy interpetation returned in the code for an example,
+     * which means ontop(a,floor) AND holding(b).
      */
-    function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        // This returns a dummy interpretation involving two random objects in the world
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
+    function interpretCommand(cmd: Parser.Command, state: WorldState) : DNFFormula {
+        var interpretation: DNFFormula = [];
+        state.objects["floor"] = { "form": "floor", "size": null, "color": null };
+
+        switch (cmd.command) {
+            case takeCmd:
+                filter(cmd.entity.object, state).forEach(obj => {
+                    interpretation.push([{ polarity: true, relation: "holding", args: [obj] }])
+                });
+                break;
+            case moveCmd:
+                var objsToMove = filter(cmd.entity.object, state);
+                var destinations = filter(cmd.location.entity.object, state);
+                if (cmd.location.entity.object.form === floor) {
+                    destinations.push(floor);
+                }
+
+                // imperative style loop seems more readable
+                for (var obj of objsToMove) {
+                    for (var dest of destinations) {
+                        if (isValid(state.objects[obj], state.objects[dest],
+                                                              cmd.location.relation)) {
+                            interpretation.push([{ polarity: true,
+                                  relation: cmd.location.relation,
+                                  args: [obj, dest]}]);
+                        }
+                    }
+                }
+                break;
+            default:
+                throw "Cannot recognize actions";
+        }
+        if (interpretation.length == 0) {
+            throw "No interpetations found"
+        }
         return interpretation;
     }
 
-}
 
+    function isValid(objToMove: Parser.Object, destination: Parser.Object,
+                                                        rel: string): boolean {
+        var relation: Rel = (<any>Rel)[rel];
+
+        // "Small objects cannot support large objects."
+        if (objToMove.size === "large"
+            && destination.size === "small"
+            && (relation === Rel.inside
+            || relation === Rel.ontop)) {
+            return false;
+        } 
+
+        // "Balls must be in boxes or on the floor, otherwise they roll away."
+        if (objToMove.form === "ball"
+            && (destination.form != "box" 
+                && destination.form != "floor" 
+                && (relation === Rel.ontop || relation === Rel.inside))) {
+            return false;
+        } 
+
+
+        // "Objects are “inside” boxes, but “ontop” of other objects."
+        if (destination.form === "box" && relation === Rel.ontop) {
+          return false;
+        } 
+
+        // "Balls cannot support anything."
+        if (destination.form === "ball"
+            && (relation === Rel.ontop
+                || relation === Rel.inside)){
+            return false;
+        }
+
+        // "Boxes cannot contain pyramids, planks or boxes of the same size."
+        if (destination.form === "box"
+            && relation === Rel.inside
+            && (objToMove.form === "pyramid"
+                || objToMove.form === "plank"
+                || (objToMove.form === "box" 
+                    && objToMove.size === destination.size))) {
+            return false;
+        }
+
+        // "Small boxes cannot be supported by small bricks or pyramids."
+        if ((objToMove.form === "box"
+            || objToMove.form === "brick") 
+            && objToMove.size === "small"
+            && relation === Rel.ontop
+            && destination.form === "pyramid"
+            && destination.size === "small") {
+            return false;
+        }
+
+        // "Large boxes cannot be supported by large pyramids."
+        // We assume that this is badly formulated because a strict 
+        // implementation of this rule would mean that large boxes can be on top
+        // of small pyramids, which doesn't make sense.
+        if (objToMove.form === "box"
+            && objToMove.size === "large"
+            && destination.form === "pyramid")
+            return false;
+
+        if ((relation === Rel.leftof
+            || relation === Rel.rightof
+            || relation === Rel.beside)
+            && objToMove === destination) {
+          return false;
+        }
+        return true;
+    }
+
+    function filter(filter: Parser.Object, state: WorldState): string[] {
+        var result: string[] = [];
+        var used_objects: string[];
+        if (filter.location === null || typeof filter.location === "undefined") {
+            used_objects = Array.prototype.concat.apply([], state.stacks);
+        } else {
+            used_objects = filter_relations(filter.location, state);
+        }
+        if (used_objects.length === 0) {
+          throw "Couldn't find any matching object";
+        }
+        var obj: Parser.Object;
+        // Filter based on desired properties
+        for (var n of used_objects) {
+            obj = state.objects[n];
+            if (isMatch(filter, obj))
+                result.push(n);
+        }
+        return result;
+    }
+
+    function isMatch(filter: Parser.Object, obj: Parser.Object) : boolean {
+        var color_match: boolean;
+        var form_match: boolean;
+        var size_match: boolean;
+        if (filter.object === null || typeof filter.object === "undefined") {
+            color_match = filter.color == null
+                || obj.color === filter.color;
+            form_match = filter.form == null
+                || obj.form === filter.form
+                || filter.form === "anyform";
+            size_match = filter.size == null
+                || obj.size === filter.size;
+        } else {
+            color_match = filter.object.color == null
+                || obj.color === filter.object.color;
+            form_match = filter.object.form == null
+                || obj.form === filter.object.form
+                || filter.object.form === "anyform";
+            size_match = filter.object.size == null
+                || obj.size === filter.object.size;
+        }
+        return color_match && form_match && size_match;
+    }
+
+    function contains(array: Object[], obj: Object) : number {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === obj)
+                return i;
+        }
+        return -1;
+    }
+
+    function aboveUnder(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
+        var result: string[] = [];
+        if (location.entity.object.form === floor && relation === Rel.above) {
+            state.stacks.forEach(stack => {
+                if (stack.length > 0)
+                    result.push(stack[0]);
+            });
+        } else {
+            var delimiters: string[] = filter(location.entity.object, state);
+            delimiters.forEach(delimiter => {
+                state.stacks.forEach(stack => {
+                   var index = contains(stack, delimiter);
+                   if (index != -1) {
+                       if (relation === Rel.above) {
+                           result = result.concat(stack.slice(index));
+                       } else {
+                           result = result.concat(stack.slice(0, index));
+                       }
+                   }
+                })
+            });
+        }
+        return result;
+    }
+
+    function inside(location: Parser.Location, state: WorldState) : string[] {
+        var result: string[] = [];
+        var potentialBoxes: string[] = filter(location.entity.object, state);
+        potentialBoxes.forEach(potentialBox => {
+            state.stacks.forEach(stack => {
+                var index: number = contains(stack, potentialBox);
+                if (index > -1) {
+                    if (index + 1 < stack.length) {
+                        result.push(stack[index + 1]);
+                    }
+                }
+            });
+        });
+        return result;
+    }
+
+    function leftRightOf(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
+        var result: string[] = [];
+        var leftOfObj: string[] = filter(location.entity.object, state);
+        
+        leftOfObj.forEach(delimiter => {
+            for (var i: number = 0 ; i < state.stacks.length; ++i) {
+                if (contains(state.stacks[i], delimiter) != -1) {
+                    if (relation === Rel.leftof) {
+                        for (var x: number = 0; x < i; ++x ) {
+                            result = result.concat(state.stacks[x]);
+                        }
+                    } else {
+                        for (var x: number = i + 1; x < state.stacks.length; ++x ) {
+                            result = result.concat(state.stacks[x]);
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+        return result;
+    }
+
+    function beside(location: Parser.Location, state: WorldState) : string[] {
+        var result: string[] = [];
+        var leftOfObj: string[] = filter(location.entity.object, state);
+        leftOfObj.forEach(bottom => {
+            for (var i: number = 0 ; i < state.stacks.length; ++i) {
+                if (contains(state.stacks[i], bottom) != -1) {
+                    if (i != 0) {
+                        result = result.concat(state.stacks[i - 1]);
+                    }
+                    if (i != state.stacks.length - 1) {
+                        result = result.concat(state.stacks[i + 1]);
+                    }
+                    break;
+                }
+            }
+        });
+        return result;
+    }
+
+    function onTop(location: Parser.Location, state: WorldState) : string[] {
+        var result: string[] = [];
+        if (location.entity.object.form === floor) {
+            state.stacks.forEach(stack => {
+                if (stack.length > 0) {
+                    result.push(stack[0]);
+                }
+            });
+        } else {
+            var delimiters: string[] = filter(location.entity.object, state);
+            delimiters.forEach(delimiter => {
+                state.stacks.forEach(stack => {
+                    var index = contains(stack, delimiter);
+                    if (index != -1) {
+                        if (index + 1 < stack.length) {
+                            result = [stack[index + 1]]
+                        }
+                    }
+                })
+            })
+        }
+        return result;
+    }
+
+    function filter_relations(location: Parser.Location, state: WorldState) : string[] {
+        var relation: Rel = (<any>Rel)[location.relation];
+        switch (relation) {
+            case Rel.leftof:
+                return leftRightOf(location, state, relation);
+            case Rel.rightof:
+                return leftRightOf(location, state, relation);
+            case Rel.inside:
+                return inside(location, state);
+            case Rel.above:
+                return aboveUnder(location, state, relation);
+            case Rel.under:
+                return aboveUnder(location, state, relation);
+            case Rel.beside:
+                  return beside(location, state);
+            case Rel.ontop:
+                return onTop(location, state );
+            default:
+                throw "No matching relation";
+        }
+    }
+}
