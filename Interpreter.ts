@@ -171,21 +171,23 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
 
     function isValid(objToMove: Parser.Object, destination: Parser.Object,
-                                                        relation: string): boolean {
+                                                        rel: string): boolean {
+        var relation: Rel = (<any>Rel)[rel];
         if (objToMove.size === "large"
               && destination.size === "small"
-              && relation === "inside") {
+              && relation === Rel.inside) {
             return false;
         } else if (objToMove.form === "ball"
-            && destination.form === "table"
-            && relation === "ontop") {
+            && (destination.form != "box" 
+                && destination.form != "floor" 
+                && (relation === Rel.ontop || relation === Rel.inside))) {
             return false;
-        } else if ((relation === "leftof"
-            || relation === "rightof"
-            || relation === "beside")
+        } else if ((relation === Rel.leftof
+            || relation === Rel.rightof
+            || relation === Rel.beside)
             && objToMove === destination) {
             return false;
-        } else if (destination.form === "box" && relation === "ontop") {
+        } else if (destination.form === "box" && relation === Rel.ontop) {
             // Not sure if we should just change the relation to "inside" here
             // or just throw an error
             return false;
