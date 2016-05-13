@@ -185,6 +185,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             || relation === "beside")
             && objToMove === destination) {
             return false;
+        } else if (destination.form === "box" && relation === "ontop") {
+            // Not sure if we should just change the relation to "inside" here
+            // or just throw an error
+            return false;
         }
         return true;
     }
