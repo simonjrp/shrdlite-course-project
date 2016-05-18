@@ -166,40 +166,53 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if (interpretation.length == 0) {
             throw "No interpetations found"
         }
-        return interpretation;
+        return unique(interpretation);
     }
 
+    function unique(arr: any[]) {
+        var uniques: any[] = [];
+        var found: any = {};
+        for (var i = 0; i < arr.length; i++) {
+            var stringified = JSON.stringify((<any>arr)[i]);
+            if ((<any>found)[stringified]) {
+                continue;
+            }
+            uniques.push((<any>arr)[i]);
+            (<any>found)[stringified] = true;
+        }
+        return uniques;
+    }
 
     function isValid(objToMove: Parser.Object, destination: Parser.Object,
-                                                        rel: string): boolean {
+                                                          rel: string): boolean {
         var relation: Rel = (<any>Rel)[rel];
 
         // "Small objects cannot support large objects."
         if (objToMove.size === "large"
-            && destination.size === "small"
-            && (relation === Rel.inside
-            || relation === Rel.ontop)) {
+              && destination.size === "small"
+              && (relation === Rel.inside
+                || relation === Rel.ontop)) {
             return false;
-        } 
+        }
 
         // "Balls must be in boxes or on the floor, otherwise they roll away."
         if (objToMove.form === "ball"
-            && (destination.form != "box" 
-                && destination.form != "floor" 
-                && (relation === Rel.ontop || relation === Rel.inside))) {
+            && (destination.form != "box"
+                && destination.form != "floor"
+                && (relation === Rel.ontop
+                  || relation === Rel.inside))) {
             return false;
-        } 
-
+        }
 
         // "Objects are “inside” boxes, but “ontop” of other objects."
         if (destination.form === "box" && relation === Rel.ontop) {
-          return false;
-        } 
+            return false;
+        }
 
         // "Balls cannot support anything."
         if (destination.form === "ball"
             && (relation === Rel.ontop
-                || relation === Rel.inside)){
+                || relation === Rel.inside)) {
             return false;
         }
 
@@ -208,35 +221,36 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             && relation === Rel.inside
             && (objToMove.form === "pyramid"
                 || objToMove.form === "plank"
-                || (objToMove.form === "box" 
+                || (objToMove.form === "box"
                     && objToMove.size === destination.size))) {
             return false;
         }
 
         // "Small boxes cannot be supported by small bricks or pyramids."
         if ((objToMove.form === "box"
-            || objToMove.form === "brick") 
-            && objToMove.size === "small"
-            && relation === Rel.ontop
-            && destination.form === "pyramid"
-            && destination.size === "small") {
+              || objToMove.form === "brick")
+              && objToMove.size === "small"
+              && relation === Rel.ontop
+              && destination.form === "pyramid"
+              && destination.size === "small") {
             return false;
         }
 
         // "Large boxes cannot be supported by large pyramids."
-        // We assume that this is badly formulated because a strict 
+        // We assume that this is badly formulated because a strict
         // implementation of this rule would mean that large boxes can be on top
         // of small pyramids, which doesn't make sense.
         if (objToMove.form === "box"
-            && objToMove.size === "large"
-            && destination.form === "pyramid")
+              && objToMove.size === "large"
+              && destination.form === "pyramid")
             return false;
 
+        // Obvious spatial law; an object cannot be right/left/etc of itself
         if ((relation === Rel.leftof
-            || relation === Rel.rightof
-            || relation === Rel.beside)
-            && objToMove === destination) {
-          return false;
+              || relation === Rel.rightof
+              || relation === Rel.beside)
+              && objToMove === destination) {
+            return false;
         }
         return true;
     }
@@ -338,7 +352,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function leftRightOf(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
-        
+
         leftOfObj.forEach(delimiter => {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
                 if (contains(state.stacks[i], delimiter) != -1) {
