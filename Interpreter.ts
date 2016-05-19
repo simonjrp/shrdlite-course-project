@@ -149,6 +149,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                     destinations.push(floor);
                 }
 
+                // handle intepretations
                 if (cmd.entity.quantifier === "all") {
                     var conjuncts : any = []
                     for (var obj of objsToMove) {
@@ -159,33 +160,33 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                                       relation: cmd.location.relation,
                                       args: [obj, dest] }
                                 var flag = false;
-                                for (var k = 0; k < conjuncts.length; k++) {
-                                    if (conjuncts[k].relation === p.relation) {
-                                        conjuncts.push(p);
-                                        flag = true;
+                                conjuncts.push(p)
+                                var prev = conjuncts.length - 2;
+                                if (conjuncts.length > 1) {
+                                    flag = conjuncts[prev].relation === p.relation;
+                                    if (!flag) {
+                                        conjuncts.pop();
                                     }
                                 }
-                                if (!flag) {
+                                if (!flag && conjuncts.length > 1) {
                                     interpretation.push([p]);
                                 }
                             }
                         }
                     }
-                    console.log("ANDS")
-                    console.log(conjuncts.length)
                     if (conjuncts.length > 0) {
-                        interpretation.push(conjuncts)
+                        interpretation.push(unique(conjuncts))
                     }
-                }
-
-                // imperative style loop seems more readable
-                for (var obj of objsToMove) {
-                    for (var dest of destinations) {
-                        if (isValid(state.objects[obj], state.objects[dest],
-                                                              cmd.location.relation)) {
-                            interpretation.push([{ polarity: true,
-                                  relation: cmd.location.relation,
-                                  args: [obj, dest]}]);
+                } else {
+                    //
+                    for (var obj of objsToMove) {
+                        for (var dest of destinations) {
+                            if (isValid(state.objects[obj], state.objects[dest],
+                                                                  cmd.location.relation)) {
+                                interpretation.push([{ polarity: true,
+                                      relation: cmd.location.relation,
+                                      args: [obj, dest]}]);
+                            }
                         }
                     }
                 }
@@ -203,6 +204,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return unique(interpretation);
     }
 
+    /* Removes duplicate elements from the array */
     function unique(arr: any[]) {
         var uniques: any[] = [];
         var found: any = {};
