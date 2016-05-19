@@ -137,6 +137,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
         switch (cmd.command) {
             case takeCmd:
+                //  if (cmd.comman)
                 filter(cmd.entity.object, state).forEach(obj => {
                     interpretation.push([{ polarity: true, relation: "holding", args: [obj] }])
                 });
@@ -146,6 +147,35 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var destinations = filter(cmd.location.entity.object, state);
                 if (cmd.location.entity.object.form === floor) {
                     destinations.push(floor);
+                }
+
+                if (cmd.entity.quantifier === "all") {
+                    var conjuncts : any = []
+                    for (var obj of objsToMove) {
+                        for (var dest of destinations) {
+                            if (isValid(state.objects[obj], state.objects[dest],
+                                                                  cmd.location.relation)) {
+                                var p = { polarity: true,
+                                      relation: cmd.location.relation,
+                                      args: [obj, dest] }
+                                var flag = false;
+                                for (var k = 0; k < conjuncts.length; k++) {
+                                    if (conjuncts[k].relation === p.relation) {
+                                        conjuncts.push(p);
+                                        flag = true;
+                                    }
+                                }
+                                if (!flag) {
+                                    interpretation.push([p]);
+                                }
+                            }
+                        }
+                    }
+                    console.log("ANDS")
+                    console.log(conjuncts.length)
+                    if (conjuncts.length > 0) {
+                        interpretation.push(conjuncts)
+                    }
                 }
 
                 // imperative style loop seems more readable
@@ -164,7 +194,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 throw "Cannot recognize actions";
         }
         if (interpretation.length == 0) {
-            throw "No interpetations found"
+            throw "No valid interpetations found."
+        }
+        if (interpretation.length > 1
+                  && (cmd.entity.quantifier === "the")) {
+            throw "Ambiguous statement, !the! quantifier"
         }
         return unique(interpretation);
     }
