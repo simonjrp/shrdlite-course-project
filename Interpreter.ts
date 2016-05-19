@@ -149,9 +149,29 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                     destinations.push(floor);
                 }
 
-                // handle intepretations
-                if (cmd.entity.quantifier === "all") {
-                    var conjuncts : any = []
+                var entQuant: string = cmd.entity.quantifier
+                var locQuant: string = cmd.location.entity.quantifier
+
+                if ((entQuant === "any" && locQuant === "all")
+                      || (entQuant === "all" && locQuant === "any")) {
+                    var temp: any = [];
+                    for (var obj of objsToMove) {
+                        for (var dest of destinations) {
+                            if (isValid(state.objects[obj], state.objects[dest],
+                                                                  cmd.location.relation)) {
+                                temp.push({ polarity: true,
+                                      relation: cmd.location.relation,
+                                      args: [obj, dest]});
+                            }
+                        }
+                    }
+                    // doesnt work quite right when temp length is an odd number
+                    var split = splitUp(temp, 2);
+                    var cprod = cartProd.apply(this, split)
+                    interpretation = cprod;
+                } else if (entQuant === "all"
+                            || (entQuant === "the" && locQuant === "all")) {
+                    var conjuncts: any = []
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
@@ -178,7 +198,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                         interpretation.push(unique(conjuncts))
                     }
                 } else {
-                    //
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
@@ -202,6 +221,53 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             throw "Ambiguous statement, !the! quantifier"
         }
         return unique(interpretation);
+    }
+
+    function cartProd(paramArray: any) {
+        function addTo(curr: any, args: any) {
+            var i : number
+            var copy : any
+            var rest : any = args.slice(1)
+            var last : any = !rest.length
+            var result : any = [];
+
+            for (i = 0; i < args[0].length; i++) {
+                copy = curr.slice();
+                copy.push(args[0][i]);
+
+                if (last) {
+                    result.push(copy);
+
+                } else {
+                    result = result.concat(addTo(copy, rest));
+                }
+            }
+            return result;
+        }
+        return addTo([], Array.prototype.slice.call(arguments));
+    }
+
+
+    function splitUp(arr: any, n: number) {
+        var rest = arr.length % n
+        var restUsed = rest
+        var partLength = Math.floor(arr.length / n)
+        var result: any = [];
+
+        for (var i = 0; i < arr.length; i += partLength) {
+            var end = partLength + i
+            var add = false;
+            if (rest !== 0 && restUsed) {
+                end++;
+                restUsed--;
+                add = true;
+            }
+            result.push(arr.slice(i, end));
+            if (add) {
+                i++;
+            }
+        }
+        return result;
     }
 
     /* Removes duplicate elements from the array */
