@@ -151,6 +151,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
                 var entQuant: string = cmd.entity.quantifier
                 var locQuant: string = cmd.location.entity.quantifier
+                var rela: string = cmd.location.relation
 
                 if (((entQuant === "any" && locQuant === "all")
                       || (entQuant === "all" && locQuant === "any"))
@@ -164,51 +165,46 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                                                                   cmd.location.relation)) {
                                 temp.push({ polarity: true,
                                       relation: cmd.location.relation,
-                                      args: [obj, dest]});
+                                      args: [obj, dest] });
                             }
                         }
                     }
-                    // doesnt work quite right when temp length is an odd number
-                    var split = splitUp(temp, c);
-                    var cprod = cartProd.apply(this, split)
+                    var groups = groupBy(temp, function(item: any) {
+                        return item.args[0];
+                    });
+                    var cprod = cartProd.apply(this, groups)
                     interpretation = cprod;
-                }
-
-                else if ((entQuant === "any" && locQuant === "all") &&
-                              (cmd.location.relation !== "inside"
-                              || cmd.location.relation !== "ontop")) {
-                        var temp1 : any = []
-                        var counter : number = 0
-                        for (var obj of objsToMove) {
-                            ++counter;
-                            for (var dest of destinations) {
-                                if (isValid(state.objects[obj], state.objects[dest],
-                                                                      cmd.location.relation)) {
-                                    temp1.push({ polarity: true,
-                                          relation: cmd.location.relation,
-                                          args: [obj, dest]});
-                                }
+                } else if ((entQuant === "any" && locQuant === "all")
+                            && (cmd.location.relation !== "inside"
+                                || cmd.location.relation !== "ontop")) {
+                    var temp1: any = []
+                    var counter: number = 0
+                    for (var obj of objsToMove) {
+                        ++counter;
+                        for (var dest of destinations) {
+                            if (isValid(state.objects[obj], state.objects[dest],
+                                                                  cmd.location.relation)) {
+                                temp1.push({ polarity: true,
+                                      relation: cmd.location.relation,
+                                      args: [obj, dest] });
                             }
                         }
+                    }
 
-                        var s = splitUp(temp1, counter);
-                        if (counter == 1) {
-                            interpretation = s;
-                        } else {
-                            for (var x of s) {
-                              interpretation.push(x)
-                            }
+                    var s = splitUp(temp1, counter);
+                    if (counter == 1) {
+                        interpretation = s;
+                    } else {
+                        for (var x of s) {
+                          interpretation.push(x)
                         }
-                 } else if (entQuant === "all" && locQuant === "any") {
-                   /// put all beside/rightof,leftof any 
-                 }
-
-                 else if (entQuant === "all"
+                    }
+                 } else if (entQuant === "all"
                               || (entQuant === "the" && locQuant === "all")) {
                      var conjuncts: any = []
                      for (var obj of objsToMove) {
-                        for (var dest of destinations) {
-                            if (isValid(state.objects[obj], state.objects[dest],
+                         for (var dest of destinations) {
+                             if (isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
                                 var p = { polarity: true,
                                       relation: cmd.location.relation,
@@ -225,9 +221,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                                 if (!flag && conjuncts.length > 1) {
                                     interpretation.push([p]);
                                 }
-                            }
-                        }
-                    }
+                             }
+                         }
+                     }
                     if (conjuncts.length > 0) {
                         interpretation.push(unique(conjuncts))
                     }
@@ -250,20 +246,32 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if (interpretation.length == 0) {
             throw "No valid interpetations found."
         }
-        if (interpretation.length > 1
-                  && (cmd.entity.quantifier === "the")) {
-            throw "Ambiguous statement, !the! quantifier"
-        }
+        //if (interpretation.length > 1
+        //          && (cmd.entity.quantifier === "the")) {
+        //    throw "Ambiguous statement, !the! quantifier"
+        //}
         return unique(interpretation);
+    }
+
+    function groupBy(array: any, f: any) {
+        var groups = {};
+        array.forEach(function(o: any) {
+            var group = JSON.stringify(f(o));
+            (<any>groups)[group] = (<any>groups)[group] || [];
+            (<any>groups)[group].push(o);
+        });
+        return Object.keys(groups).map(function(group) {
+            return (<any>groups)[group];
+        });
     }
 
     function cartProd(paramArray: any) {
         function addTo(curr: any, args: any) {
-            var i : number
-            var copy : any
-            var rest : any = args.slice(1)
-            var last : any = !rest.length
-            var result : any = [];
+            var i: number
+            var copy: any
+            var rest: any = args.slice(1)
+            var last: any = !rest.length
+            var result: any = [];
 
             for (i = 0; i < args[0].length; i++) {
                 copy = curr.slice();

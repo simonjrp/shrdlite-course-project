@@ -73,7 +73,7 @@ var allTestCases : TestCase[] = [
 ];
 
 
- /* Simple test cases for the ALL quantifier, uncomment if you want */
+ /* The tests included plus some extra were added */
  allTestCases.push(
      { world: "small",
        utterance: "put all balls on the floor",
@@ -107,21 +107,15 @@ var allTestCases : TestCase[] = [
  /* More dubious examples for the ALL quantifier */
 // /* (i.e., it's not clear that these interpretations are the best) */
  allTestCases.push(
-    {world: "small",
+    { world: "small",
       utterance: "put a ball in every large box",
       interpretations: [["inside(e,k) & inside(f,k)", "inside(e,l) & inside(f,k)",
                          "inside(e,k) & inside(f,l)", "inside(e,l) & inside(f,l)"]]
-     });
+     },
 
-//     {world: "small",
-//      utterance: "put every ball in a box",
-//      interpretations: [["inside(e,k) & inside(f,k)", "inside(e,l) & inside(f,k)",
-//                         "inside(e,k) & inside(f,l)", "inside(e,l) & inside(f,l)",
-//                         "inside(e,k) & inside(f,m)", "inside(e,l) & inside(f,m)"]]
-//     },
-//   {world: "small",
-//      utterance: "put all balls beside any box",
-//      interpretations: []
-//     }
-//
-// );
+     { world: "small",
+       utterance: "put every ball in a box",
+       interpretations: [["inside(e,k) & inside(f,k)", "inside(e,l) & inside(f,k)",
+                         "inside(e,k) & inside(f,l)", "inside(e,l) & inside(f,l)",
+                         "inside(e,k) & inside(f,m)", "inside(e,l) & inside(f,m)"]]
+     });
