@@ -94,6 +94,12 @@ var allTestCases : TestCase[] = [
      { world: "small",
        utterance: "put the table beside all balls",
        interpretations: [["beside(g,e) & beside(g,f)"]]
+     },
+     { world: "small",
+       utterance: "put any ball right of all boxes",
+       interpretations: [["rightof(e,k) & rightof(e,l) & rightof(e,m)",
+                          "rightof(f,k) & rightof(f,l) & rightof(f,m)"]]
+
      }
  );
 

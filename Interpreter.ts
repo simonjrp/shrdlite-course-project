@@ -152,10 +152,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var entQuant: string = cmd.entity.quantifier
                 var locQuant: string = cmd.location.entity.quantifier
 
-                if ((entQuant === "any" && locQuant === "all")
-                      || (entQuant === "all" && locQuant === "any")) {
+                if (((entQuant === "any" && locQuant === "all")
+                      || (entQuant === "all" && locQuant === "any"))
+                        && (cmd.location.relation === "inside")) {
                     var temp: any = [];
+                    var c: number = 0;
                     for (var obj of objsToMove) {
+                        ++c;
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
@@ -166,13 +169,44 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                         }
                     }
                     // doesnt work quite right when temp length is an odd number
-                    var split = splitUp(temp, 2);
+                    var split = splitUp(temp, c);
                     var cprod = cartProd.apply(this, split)
                     interpretation = cprod;
-                } else if (entQuant === "all"
-                            || (entQuant === "the" && locQuant === "all")) {
-                    var conjuncts: any = []
-                    for (var obj of objsToMove) {
+                }
+
+                else if ((entQuant === "any" && locQuant === "all") &&
+                              (cmd.location.relation !== "inside"
+                              || cmd.location.relation !== "ontop")) {
+                        var temp1 : any = []
+                        var counter : number = 0
+                        for (var obj of objsToMove) {
+                            ++counter;
+                            for (var dest of destinations) {
+                                if (isValid(state.objects[obj], state.objects[dest],
+                                                                      cmd.location.relation)) {
+                                    temp1.push({ polarity: true,
+                                          relation: cmd.location.relation,
+                                          args: [obj, dest]});
+                                }
+                            }
+                        }
+
+                        var s = splitUp(temp1, counter);
+                        if (counter == 1) {
+                            interpretation = s;
+                        } else {
+                            for (var x of s) {
+                              interpretation.push(x)
+                            }
+                        }
+                 } else if (entQuant === "all" && locQuant === "any") {
+                   /// put all beside/rightof,leftof any 
+                 }
+
+                 else if (entQuant === "all"
+                              || (entQuant === "the" && locQuant === "all")) {
+                     var conjuncts: any = []
+                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
