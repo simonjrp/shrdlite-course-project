@@ -126,10 +126,15 @@ var allTestCases : TestCase[] = [
        interpretations: [["rightof(g,k) & rightof(g,l) & rightof(g,m)",
                           "rightof(m,k) & rightof(m,l)"]]
 
+     },
+     { world: "small",
+       utterance: "put any box beside all balls",
+       interpretations: [["beside(l,e) & beside(l,f)",
+                          "beside(k,e) & beside(k,f)",
+                          "beside(m,e) & beside(m,f)"]]
+
      }
-
  );
-
 
  /* More dubious examples for the ALL quantifier */
 // /* (i.e., it's not clear that these interpretations are the best) */

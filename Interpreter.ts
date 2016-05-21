@@ -153,9 +153,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var locQuant: string = cmd.location.entity.quantifier
                 var rela: string = cmd.location.relation
 
-                if (((entQuant === "any" && locQuant === "all" && destinations.length > 1 && (rela === "inside" || rela === "ontop"))
+                if (entQuant === "all" && locQuant === "all"
+                                            && (rela === "inside" || rela === "ontop")) {
+                    throw "Things can only be inside or on top exactly one object"
+                }
+
+                if (((entQuant === "any" && locQuant === "all" && destinations.length > 1
+                      && (rela === "inside" || rela === "ontop")) // not sure about this
                       || (entQuant === "all" && locQuant === "any" && objsToMove.length > 1))){
-                        //&& (rela === "inside" || rela === "beside")) {
                     var temp: any = [];
                     var c: number = 0;
                     for (var obj of objsToMove) {
@@ -170,13 +175,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                         }
                     }
                     console.log("first")
-                    //console.log(temp);
                     var groups = groupBy(temp, function(item: any) {
                         return item.args[0];
                     });
-                    //console.log(groups)
                     var cprod = cartProd.apply(this, groups)
-                    //console.log(cprod)
                     interpretation = cprod;
                 } else if ((entQuant === "any" && locQuant === "all")) {
                     console.log("second")
@@ -201,28 +203,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                           interpretation.push(x)
                         }
                     }
-                 } //else if (entQuant === "all" && locQuant === "any") {
-                   /*
-                   var t: any = []
-                   for (var obj of objsToMove) {
-                       for (var dest of destinations) {
-                           if (isValid(state.objects[obj], state.objects[dest],
-                                                                cmd.location.relation)) {
-                              var p = { polarity: true,
-                                    relation: cmd.location.relation,
-                                    args: [obj, dest] }
-                              t.push(p);
-
-                           }
-                       }
-                   }
-                   var g: any = []
-                   t = unique(t)
-                   g = groupBy(tmp, function(item: any) {
-                      return item.args[0];
-                // });
-                  */
-                  else if ((entQuant === "the" && locQuant === "all") ||
+                 } else if ((entQuant === "the" && locQuant === "all") ||
                             (entQuant === "all" && locQuant === "the")) {
                     var tmp: any = []
                     for (var obj of objsToMove) {
@@ -285,6 +266,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                             }
                         }
                     }
+                    // check for ambiguity here
                 }
                 break;
             default:
@@ -293,10 +275,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if (interpretation.length == 0) {
             throw "No valid interpetations found."
         }
-        //if (interpretation.length > 1
-        //          && (cmd.entity.quantifier === "the")) {
-        //    throw "Ambiguous statement, !the! quantifier"
-        //}
         return unique(interpretation);
     }
 
