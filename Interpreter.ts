@@ -153,9 +153,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var locQuant: string = cmd.location.entity.quantifier
                 var rela: string = cmd.location.relation
 
-                if (((entQuant === "any" && locQuant === "all")
-                      || (entQuant === "all" && locQuant === "any"))
-                        && (cmd.location.relation === "inside")) {
+                if (((entQuant === "any" && locQuant === "all" && destinations.length > 1 && (rela === "inside" || rela === "ontop"))
+                      || (entQuant === "all" && locQuant === "any" && objsToMove.length > 1))){
+                        //&& (rela === "inside" || rela === "beside")) {
                     var temp: any = [];
                     var c: number = 0;
                     for (var obj of objsToMove) {
@@ -169,14 +169,17 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                             }
                         }
                     }
+                    console.log("first")
+                    //console.log(temp);
                     var groups = groupBy(temp, function(item: any) {
                         return item.args[0];
                     });
+                    //console.log(groups)
                     var cprod = cartProd.apply(this, groups)
+                    //console.log(cprod)
                     interpretation = cprod;
-                } else if ((entQuant === "any" && locQuant === "all")
-                            && (cmd.location.relation !== "inside"
-                                || cmd.location.relation !== "ontop")) {
+                } else if ((entQuant === "any" && locQuant === "all")) {
+                    console.log("second")
                     var temp1: any = []
                     var counter: number = 0
                     for (var obj of objsToMove) {
@@ -190,7 +193,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                             }
                         }
                     }
-
                     var s = splitUp(temp1, counter);
                     if (counter == 1) {
                         interpretation = s;
@@ -199,9 +201,63 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                           interpretation.push(x)
                         }
                     }
-                 } else if (entQuant === "all"
-                              || (entQuant === "the" && locQuant === "all")) {
-                     var conjuncts: any = []
+                 } //else if (entQuant === "all" && locQuant === "any") {
+                   /*
+                   var t: any = []
+                   for (var obj of objsToMove) {
+                       for (var dest of destinations) {
+                           if (isValid(state.objects[obj], state.objects[dest],
+                                                                cmd.location.relation)) {
+                              var p = { polarity: true,
+                                    relation: cmd.location.relation,
+                                    args: [obj, dest] }
+                              t.push(p);
+
+                           }
+                       }
+                   }
+                   var g: any = []
+                   t = unique(t)
+                   g = groupBy(tmp, function(item: any) {
+                      return item.args[0];
+                // });
+                  */
+                  else if ((entQuant === "the" && locQuant === "all") ||
+                            (entQuant === "all" && locQuant === "the")) {
+                    var tmp: any = []
+                    for (var obj of objsToMove) {
+                        for (var dest of destinations) {
+                            if (isValid(state.objects[obj], state.objects[dest],
+                                                                 cmd.location.relation)) {
+                               var p = { polarity: true,
+                                     relation: cmd.location.relation,
+                                     args: [obj, dest] }
+                               tmp.push(p);
+
+                            }
+                        }
+                    }
+                    var gs: any = []
+                    tmp = unique(tmp)
+                    if (entQuant === "all" && locQuant === "the" && destinations.length > 1) {
+                        gs = groupBy(tmp, function(item: any) {
+                            return item.args[1];
+                        });
+                        // Ambiguity!
+                    } else if (entQuant === "the" && locQuant === "all" && objsToMove.length > 1) {
+                        gs = groupBy(tmp, function(item: any) {
+                        return item.args[0];
+                      });
+                      // Ambiguity!
+                    } else {
+                        gs = groupBy(tmp, function(item: any) {
+                            return item.relation;
+                        });
+                    }
+                    interpretation = gs;
+                 } else if ((entQuant === "all" && objsToMove.length > 1)
+                              || locQuant === "all") {
+                     var tmp: any = []
                      for (var obj of objsToMove) {
                          for (var dest of destinations) {
                              if (isValid(state.objects[obj], state.objects[dest],
@@ -209,24 +265,15 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                                 var p = { polarity: true,
                                       relation: cmd.location.relation,
                                       args: [obj, dest] }
-                                var flag = false;
-                                conjuncts.push(p)
-                                var prev = conjuncts.length - 2;
-                                if (conjuncts.length > 1) {
-                                    flag = conjuncts[prev].relation === p.relation;
-                                    if (!flag) {
-                                        conjuncts.pop();
-                                    }
-                                }
-                                if (!flag && conjuncts.length > 1) {
-                                    interpretation.push([p]);
-                                }
+                                tmp.push(p);
+
                              }
                          }
                      }
-                    if (conjuncts.length > 0) {
-                        interpretation.push(unique(conjuncts))
-                    }
+                     var groups = groupBy(unique(tmp), function(item: any) {
+                         return item.relation;
+                     });
+                     interpretation = groups;
                 } else {
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {

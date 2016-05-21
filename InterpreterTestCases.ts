@@ -100,7 +100,34 @@ var allTestCases : TestCase[] = [
        interpretations: [["rightof(e,k) & rightof(e,l) & rightof(e,m)",
                           "rightof(f,k) & rightof(f,l) & rightof(f,m)"]]
 
+     },
+     { world: "small",
+       utterance: "put all balls right of the box",
+       interpretations: [["rightof(e,l) & rightof(f,l)",
+                          "rightof(e,k) & rightof(f,k)",
+                          "rightof(e,m) & rightof(f,m)"]]
+
+     },
+     { world: "small",
+       utterance: "put a box on top of all tables",
+       interpretations: [["ontop(l,g)",
+                          "ontop(k,g)",
+                          "ontop(m,g)"]]
+
+     },
+     { world: "small",
+       utterance: "put the ball beside all boxes",
+       interpretations: [["beside(e,k) & beside(e,l) & beside(e,m)",
+                          "beside(f,k) & beside(f,l) & beside(f,m)"]]
+
+     },
+     { world: "small",
+       utterance: "put any blue object right of all boxes",
+       interpretations: [["rightof(g,k) & rightof(g,l) & rightof(g,m)",
+                          "rightof(m,k) & rightof(m,l)"]]
+
      }
+
  );
 
 
