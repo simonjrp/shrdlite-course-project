@@ -75,15 +75,18 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+        
         // The goal function
         function g(n: StateNode): boolean {
             var objToMove: string;
             var destination: string;
+            var destIndex: number;
             var relation: Interpreter.Rel;
             var isGoal: boolean;
-
+            
+            // Outermost loop represents OR conditions
             for (var i: number = 0; i < interpretation.length; i++) {
-                isGoal = true;
+                // Innermost loop represents AND conditions
                 for (var j: number = 0; j < interpretation[i].length; j++) {
                     relation = (<any>Interpreter.Rel)[interpretation[i][j].relation];
                     
@@ -92,27 +95,30 @@ module Planner {
                     } else {
                         objToMove = interpretation[i][j].args[0];
                         destination = interpretation[i][j].args[1];
+                        // If we are holding either the destination object or
+                        // the object to move and we have a binary relation,
+                        // it cannot be the goal
                         if (n.state.holding === destination
                             || n.state.holding === objToMove) {
                             isGoal = false;
                             continue;
                         }
                     }
+                    isGoal = false;
 
                     switch (relation) {
                         case Interpreter.Rel.leftof:
                         case Interpreter.Rel.rightof:
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                if (n.state.stacks[k].indexOf(objToMove) != -1
-                                    && k != n.state.stacks.length - 1) {
-                                    var objs: string[];
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if (n.state.stacks[k].indexOf(destination) != -1) {
+                                    var objs: string[] = [];
                                     if (relation === Interpreter.Rel.leftof)
-                                        objs = [].concat.apply([], n.state.stacks.slice(k + 1));
-                                    else
                                         objs = [].concat.apply([], n.state.stacks.slice(0,k));
-                                    
-                                    if (objs.indexOf(destination) === -1) {
-                                        isGoal = false;
+                                    else
+                                        objs = [].concat.apply([], n.state.stacks.slice(k+1));
+                                    if (objs.indexOf(objToMove) != -1) {
+                                        isGoal = true;
                                         break;
                                     }
                                 }
@@ -121,7 +127,6 @@ module Planner {
                         case Interpreter.Rel.ontop:
                         case Interpreter.Rel.inside:
                             if (destination === "floor") {
-                                isGoal = false;
                                 for (var k: number = 0; k < n.state.stacks.length; k++) {
                                     if (n.state.stacks[k].length != 0 && n.state.stacks[k][0] === objToMove) {
                                         isGoal = true;
@@ -129,35 +134,32 @@ module Planner {
                                     }
                                 }
                             } else {
-                                isGoal = false;
                                 for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                    var destIndex: number = n.state.stacks[k].indexOf(destination);
+                                    destIndex = n.state.stacks[k].indexOf(destination);
                                     if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1
                                         && n.state.stacks[k][destIndex + 1] === objToMove) {
                                         isGoal = true;
                                         break;
                                     }
                                 }
-
                             }
-
                             break;
                         case Interpreter.Rel.above:
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                var destIndex: number = n.state.stacks[k].indexOf(destination);
-                                if (destIndex != -1 && destIndex < n.state.stacks[k].length) {
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1) {
                                     var above: string[] = n.state.stacks[k].slice(destIndex + 1);
-                                    if(above.indexOf(objToMove) === -1) {
-                                        isGoal = false;
+                                    if(above.indexOf(objToMove) != -1) {
+                                        isGoal = true;
                                         break;
                                     }
                                 }
                             }
                             break;
                         case Interpreter.Rel.under:
-                            isGoal = false;
+                            
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                var destIndex: number = n.state.stacks[k].indexOf(destination);
+                                destIndex = n.state.stacks[k].indexOf(destination);
                                 if (destIndex != -1 && destIndex > 0) {
                                     var under: string[] = n.state.stacks[k].slice(0, destIndex);
                                     if (under.indexOf(objToMove) != -1) {
@@ -168,9 +170,8 @@ module Planner {
                             }
                             break;
                         case Interpreter.Rel.beside:
-                            isGoal = false;
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                var destIndex: number = n.state.stacks[k].indexOf(destination);
+                                destIndex = n.state.stacks[k].indexOf(destination);
                                 if(destIndex != -1) {
                                     if ((k > 0 && n.state.stacks[k - 1].indexOf(objToMove) != -1)
                                         || (k < n.state.stacks.length - 1
@@ -182,19 +183,26 @@ module Planner {
                             }
                             break;
                         case Interpreter.Rel.holding:
-                            if (n.state.holding != objToMove)
-                                isGoal = false;
+                            isGoal = n.state.holding === objToMove;
                             break;
                         default:
                             throw "Unknown relation";
                     }
-                    if (isGoal)
-                        return true;
+                    // If one condition is false within an AND statement,
+                    // the conjunction cannot be true
+                    if (!isGoal) 
+                        return false;
+                }
+                // If any of the conditions within an OR statement is true
+                // the OR statement must be true
+                if(isGoal) {
+                    return true;
                 }
             }
             return false;
         }
         
+        // TODO: Implement heuristics
         function h(n: StateNode): number {
           return 0;
         }
@@ -216,7 +224,6 @@ module Planner {
                     }
                 }
             }
-            console.log(plan);
             return plan;
         }
         var startNode: StateNode = new StateNode(state);
