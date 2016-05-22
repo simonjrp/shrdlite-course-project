@@ -1,9 +1,3 @@
-///<reference path="Graph.ts"/>
-///<reference path="World.ts"/>
-///<reference path="Parser.ts"/>
-///<reference path="Interpreter.ts"/>
-///<reference path="lib/collections.ts"/>
-
 // A node containing a world state
 class StateNode {
     
@@ -23,6 +17,8 @@ class StateNode {
             + this.state.stacks.toString() + ")");
     }
 
+    // Returns a "semi-deep" copy of this state node.
+    // (this.objects and this.examples are only shallow copies)
     clone(): StateNode {
         var newStacks: Stack[] = [];
         for(var i in this.state.stacks) {
@@ -39,18 +35,17 @@ class StateNode {
     }
 }
 
+// A graph used with StateNodes
 class StateGraph implements Graph<StateNode> {
-    private nodeSet: collections.Set<StateNode>;
     constructor(public objects: { [s: string]: ObjectDefinition; })
-    {
-        this.nodeSet = new collections.Set<StateNode>();
-    }
+    {}
 
     outgoingEdges(node: StateNode): Edge<StateNode>[] {
         var result: Edge<StateNode>[] = [];
         var childNode: StateNode;
         var newEdge: Edge<StateNode>;
         var actions: string[] = ["l", "r", "d", "p"];
+        // Creates edges for each action performed
         for (var a in actions) {
             childNode = node.clone();
             childNode.state = this.getNextState(childNode.state, actions[a]);
@@ -66,6 +61,7 @@ class StateGraph implements Graph<StateNode> {
         return a.compareTo(b);
     }
 
+    // Returns the next state, given the current one and an action.
     getNextState(state: WorldState, action: string): WorldState {
         switch (action) {
             case "l":
@@ -119,7 +115,3 @@ class StateGraph implements Graph<StateNode> {
         }
     }
 }
-
-
-
-
