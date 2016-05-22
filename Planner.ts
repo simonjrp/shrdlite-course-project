@@ -82,6 +82,37 @@ module Planner {
             var destination: string;
             var relation: Interpreter.Rel;
             var isGoal: boolean;
+            var leif: WorldState = {
+                "stacks": [[], ["g", "l", "e"], [], ["k", "m", "f"], []],
+                "holding": null,
+                "arm": 1,
+                "objects": {
+                    "a": { "form": "brick", "size": "large", "color": "green" },
+                    "b": { "form": "brick", "size": "small", "color": "white" },
+                    "c": { "form": "plank", "size": "large", "color": "red" },
+                    "d": { "form": "plank", "size": "small", "color": "green" },
+                    "e": { "form": "ball", "size": "large", "color": "white" },
+                    "f": { "form": "ball", "size": "small", "color": "black" },
+                    "g": { "form": "table", "size": "large", "color": "blue" },
+                    "h": { "form": "table", "size": "small", "color": "red" },
+                    "i": { "form": "pyramid", "size": "large", "color": "yellow" },
+                    "j": { "form": "pyramid", "size": "small", "color": "red" },
+                    "k": { "form": "box", "size": "large", "color": "yellow" },
+                    "l": { "form": "box", "size": "large", "color": "red" },
+                    "m": { "form": "box", "size": "small", "color": "blue" }
+                },
+                "examples": [
+                    "put the white ball in a box on the floor",
+                    "put the black ball in a box on the floor",
+                    "take a blue object",
+                    "take the white ball",
+                    "put all boxes on the floor",
+                    "move all balls inside a large box"
+                ]
+            };
+            if (state === leif) {
+                console.log("hej");
+            }
             for (var i: number = 0; i < interpretation.length; i++) {
                 isGoal = true;
                 for (var j: number = 0; j < interpretation[i].length; j++) {
@@ -129,15 +160,16 @@ module Planner {
                                     }
                                 }
                             } else {
+                                isGoal = false;
                                 for (var k: number = 0; k < n.state.stacks.length; k++) {
                                     var destIndex: number = n.state.stacks[k].indexOf(destination);
-                                    if (destIndex != -1 && (destIndex === n.state.stacks[k].length - 1
-                                        || n.state.stacks[k][destIndex + 1] != objToMove)) {
-                                        isGoal = false;
+                                    if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1
+                                        && n.state.stacks[k][destIndex + 1] === objToMove) {
+                                        isGoal = true;
                                         break;
                                     }
                                 }
-                                isGoal = false;
+
                             }
 
                             break;
@@ -218,13 +250,12 @@ module Planner {
                     }
                 }
             }
+            console.log(plan);
             return plan;
         }
         var startNode: StateNode = new StateNode(state);
         var graph: Graph<StateNode> = new StateGraph(state.objects);
-        console.log("Starting A*");
         var result = aStarSearch(graph, startNode, g, h, 10);
-        console.log("Got a result");
         return buildPlan(result);
     }
 

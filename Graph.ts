@@ -73,8 +73,8 @@ function aStarSearch<Node>(
 
     function expandPath(node: Node): Node[] {
         var parentNode: Node = parent.getValue(node);
-        if (parentNode === start)
-            return [start,node];
+        if (node === start)
+            return [node];
         else
             var result: Node[] = expandPath(parentNode);
             result.push(node);
