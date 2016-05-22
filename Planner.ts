@@ -82,37 +82,7 @@ module Planner {
             var destination: string;
             var relation: Interpreter.Rel;
             var isGoal: boolean;
-            var leif: WorldState = {
-                "stacks": [[], ["g", "l", "e"], [], ["k", "m", "f"], []],
-                "holding": null,
-                "arm": 1,
-                "objects": {
-                    "a": { "form": "brick", "size": "large", "color": "green" },
-                    "b": { "form": "brick", "size": "small", "color": "white" },
-                    "c": { "form": "plank", "size": "large", "color": "red" },
-                    "d": { "form": "plank", "size": "small", "color": "green" },
-                    "e": { "form": "ball", "size": "large", "color": "white" },
-                    "f": { "form": "ball", "size": "small", "color": "black" },
-                    "g": { "form": "table", "size": "large", "color": "blue" },
-                    "h": { "form": "table", "size": "small", "color": "red" },
-                    "i": { "form": "pyramid", "size": "large", "color": "yellow" },
-                    "j": { "form": "pyramid", "size": "small", "color": "red" },
-                    "k": { "form": "box", "size": "large", "color": "yellow" },
-                    "l": { "form": "box", "size": "large", "color": "red" },
-                    "m": { "form": "box", "size": "small", "color": "blue" }
-                },
-                "examples": [
-                    "put the white ball in a box on the floor",
-                    "put the black ball in a box on the floor",
-                    "take a blue object",
-                    "take the white ball",
-                    "put all boxes on the floor",
-                    "move all balls inside a large box"
-                ]
-            };
-            if (state === leif) {
-                console.log("hej");
-            }
+
             for (var i: number = 0; i < interpretation.length; i++) {
                 isGoal = true;
                 for (var j: number = 0; j < interpretation[i].length; j++) {
@@ -198,18 +168,14 @@ module Planner {
                             }
                             break;
                         case Interpreter.Rel.beside:
+                            isGoal = false;
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
-                                if (n.state.stacks[k].indexOf(objToMove) != -1) {
-                                    // If left of (adjacent)
-                                    if (k === n.state.stacks.length - 1 ||
-                                        n.state.stacks[k + 1].indexOf(destination) === -1) {
-                                        isGoal = false;
-                                        break;
-                                    }
-                                    // If right of (adjacent)
-                                    if (k === 0 ||
-                                        n.state.stacks[k - 1].indexOf(destination) === -1) {
-                                        isGoal = false;
+                                var destIndex: number = n.state.stacks[k].indexOf(destination);
+                                if(destIndex != -1) {
+                                    if ((k > 0 && n.state.stacks[k - 1].indexOf(objToMove) != -1)
+                                        || (k < n.state.stacks.length - 1
+                                            && n.state.stacks[k + 1].indexOf(objToMove) != -1)) {
+                                        isGoal = true;
                                         break;
                                     }
                                 }

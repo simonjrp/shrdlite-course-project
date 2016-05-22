@@ -4,8 +4,7 @@
 ///<reference path="Interpreter.ts"/>
 ///<reference path="lib/collections.ts"/>
 
-// A simplified world state only containing the 
-
+// A node containing a world state
 class StateNode {
     
     constructor(
@@ -100,7 +99,7 @@ class StateGraph implements Graph<StateNode> {
                     if (stackSize === 0)
                         destination = { "form": "floor", "size": null, "color": null };
                     else
-                        destination = state.stacks[state.arm][stackSize - 1];
+                        destination = this.objects[state.stacks[state.arm][stackSize - 1]];
                     var isValid: boolean;
                     if (destination.form === "box")
                         isValid = Interpreter.isValid(objToMove, destination, "inside")

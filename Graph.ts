@@ -109,9 +109,12 @@ function aStarSearch<Node>(
     g.setValue(start, 0);
     frontierQ.enqueue(start);
     frontierSet.add(start);
-    while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
+    // while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
+  while (!frontierSet.isEmpty()) {
+
       // Pick node with smallest f() = g() + h() value
       current = frontierQ.dequeue();
+      frontierSet.remove(current);
 
         // If we've found the goal node, return path and cost to get there
         if (goal(current)) {
