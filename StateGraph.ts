@@ -1,3 +1,7 @@
+///<reference path="Graph.ts"/>
+///<reference path="World.ts"/>
+///<reference path="Interpreter.ts"/>
+
 // A node containing a world state
 class StateNode {
     

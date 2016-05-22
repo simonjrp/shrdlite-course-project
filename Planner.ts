@@ -1,5 +1,3 @@
-///<reference path="World.ts"/>
-///<reference path="Interpreter.ts"/>
 ///<reference path="StateGraph.ts"/>
 ///<reference path="Graph.ts"/>
 
@@ -77,6 +75,7 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+        // The goal function
         function g(n: StateNode): boolean {
             var objToMove: string;
             var destination: string;
@@ -156,12 +155,13 @@ module Planner {
                             }
                             break;
                         case Interpreter.Rel.under:
+                            isGoal = false;
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
                                 var destIndex: number = n.state.stacks[k].indexOf(destination);
                                 if (destIndex != -1 && destIndex > 0) {
                                     var under: string[] = n.state.stacks[k].slice(0, destIndex);
-                                    if (under.indexOf(objToMove) === -1) {
-                                        isGoal = false;
+                                    if (under.indexOf(objToMove) != -1) {
+                                        isGoal = true;
                                         break;
                                     }
                                 }
