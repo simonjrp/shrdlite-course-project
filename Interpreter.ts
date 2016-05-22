@@ -109,14 +109,15 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     /*
     * An enumeration of the various relations
     */
-    enum Rel {
+    export enum Rel {
         leftof,
         rightof,
         above,
         ontop,
         under,
         beside,
-        inside
+        inside,
+        holding
     }
 
     /**
@@ -352,7 +353,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return uniques;
     }
 
-    function isValid(objToMove: Parser.Object, destination: Parser.Object,
+    // TODO: Maybe move to another place? Used here and in StateGraph
+    export function isValid(objToMove: Parser.Object, destination: Parser.Object,
                                                           rel: string): boolean {
         var relation: Rel = (<any>Rel)[rel];
 

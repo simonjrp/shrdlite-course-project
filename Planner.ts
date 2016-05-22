@@ -1,5 +1,5 @@
-///<reference path="World.ts"/>
-///<reference path="Interpreter.ts"/>
+///<reference path="StateGraph.ts"/>
+///<reference path="Graph.ts"/>
 
 /** 
 * Planner module
@@ -75,49 +75,163 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-        // This function returns a dummy plan involving a random stack
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-        var plan : string[] = [];
+        
+        // The goal function
+        function g(n: StateNode): boolean {
+            var objToMove: string;
+            var destination: string;
+            var destIndex: number;
+            var relation: Interpreter.Rel;
+            var isGoal: boolean;
+            
+            // Outermost loop represents OR conditions
+            for (var i: number = 0; i < interpretation.length; i++) {
+                // Innermost loop represents AND conditions
+                for (var j: number = 0; j < interpretation[i].length; j++) {
+                    relation = (<any>Interpreter.Rel)[interpretation[i][j].relation];
+                    
+                    if(relation === Interpreter.Rel.holding) {
+                        objToMove = interpretation[i][j].args[0];
+                    } else {
+                        objToMove = interpretation[i][j].args[0];
+                        destination = interpretation[i][j].args[1];
+                        // If we are holding either the destination object or
+                        // the object to move and we have a binary relation,
+                        // it cannot be the goal
+                        if (n.state.holding === destination
+                            || n.state.holding === objToMove) {
+                            isGoal = false;
+                            continue;
+                        }
+                    }
+                    isGoal = false;
 
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
+                    switch (relation) {
+                        case Interpreter.Rel.leftof:
+                        case Interpreter.Rel.rightof:
+                            for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if (n.state.stacks[k].indexOf(destination) != -1) {
+                                    var objs: string[] = [];
+                                    if (relation === Interpreter.Rel.leftof)
+                                        objs = [].concat.apply([], n.state.stacks.slice(0,k));
+                                    else
+                                        objs = [].concat.apply([], n.state.stacks.slice(k+1));
+                                    if (objs.indexOf(objToMove) != -1) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;                      
+                        case Interpreter.Rel.ontop:
+                        case Interpreter.Rel.inside:
+                            if (destination === "floor") {
+                                for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                    if (n.state.stacks[k].length != 0 && n.state.stacks[k][0] === objToMove) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                    destIndex = n.state.stacks[k].indexOf(destination);
+                                    if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1
+                                        && n.state.stacks[k][destIndex + 1] === objToMove) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        case Interpreter.Rel.above:
+                            for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1) {
+                                    var above: string[] = n.state.stacks[k].slice(destIndex + 1);
+                                    if(above.indexOf(objToMove) != -1) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        case Interpreter.Rel.under:
+                            
+                            for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if (destIndex != -1 && destIndex > 0) {
+                                    var under: string[] = n.state.stacks[k].slice(0, destIndex);
+                                    if (under.indexOf(objToMove) != -1) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        case Interpreter.Rel.beside:
+                            for (var k: number = 0; k < n.state.stacks.length; k++) {
+                                destIndex = n.state.stacks[k].indexOf(destination);
+                                if(destIndex != -1) {
+                                    if ((k > 0 && n.state.stacks[k - 1].indexOf(objToMove) != -1)
+                                        || (k < n.state.stacks.length - 1
+                                            && n.state.stacks[k + 1].indexOf(objToMove) != -1)) {
+                                        isGoal = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        case Interpreter.Rel.holding:
+                            isGoal = n.state.holding === objToMove;
+                            break;
+                        default:
+                            throw "Unknown relation";
+                    }
+                    // If one condition is false within an AND statement,
+                    // the conjunction cannot be true
+                    if (!isGoal) 
+                        return false;
+                }
+                // If any of the conditions within an OR statement is true
+                // the OR statement must be true
+                if(isGoal) {
+                    return true;
+                }
             }
-        } else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
-                plan.push("r");
-            }
+            return false;
+        }
+        
+        // TODO: Implement heuristics
+        function h(n: StateNode): number {
+          return 0;
         }
 
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
-        plan.push("Picking up the " + state.objects[obj].form,
-                  "p");
-
-        if (pickstack < state.stacks.length-1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length-1; i++) {
-                plan.push("r");
+        function buildPlan(result: SearchResult<StateNode>): string[] {
+            var plan: string[] = [];
+            var graph: Graph<StateNode> = new StateGraph(state.objects);
+            var currentNode: StateNode;
+            var nextNode: StateNode;
+            var actions: string[] = ["l", "r", "d", "p"];
+            for (var i: number = 0; i < result.path.length - 1; i++) {
+                nextNode = result.path[i + 1];
+                for (var a in actions) {
+                    currentNode = result.path[i].clone();
+                    currentNode.state === (<StateGraph>graph).getNextState(currentNode.state, actions[a]);
+                    if (currentNode.toString() === nextNode.toString()) {
+                        plan.push(actions[a]);
+                        break;
+                    }
+                }
             }
-
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length-1; i > pickstack; i--) {
-                plan.push("l");
-            }
+            return plan;
         }
-
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form,
-                  "d");
-
-        return plan;
+        var startNode: StateNode = new StateNode(state);
+        var graph: Graph<StateNode> = new StateGraph(state.objects);
+        var result = aStarSearch(graph, startNode, g, h, 10);
+        return buildPlan(result);
     }
+
+
 
 }

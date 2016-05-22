@@ -73,8 +73,8 @@ function aStarSearch<Node>(
 
     function expandPath(node: Node): Node[] {
         var parentNode: Node = parent.getValue(node);
-        if (parentNode === start)
-            return [start,node];
+        if (node === start)
+            return [node];
         else
             var result: Node[] = expandPath(parentNode);
             result.push(node);
@@ -109,10 +109,12 @@ function aStarSearch<Node>(
     g.setValue(start, 0);
     frontierQ.enqueue(start);
     frontierSet.add(start);
+    // while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
+  while (!frontierSet.isEmpty()) {
 
-    while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
       // Pick node with smallest f() = g() + h() value
       current = frontierQ.dequeue();
+      frontierSet.remove(current);
 
         // If we've found the goal node, return path and cost to get there
         if (goal(current)) {
@@ -120,11 +122,9 @@ function aStarSearch<Node>(
             result.cost = g.getValue(current);
             return result;
         }
-
         visited.add(current);
 
         edges = graph.outgoingEdges(current);
-
         for (var i: number = 0; i < edges.length; i++) {
             neighbour = edges[i].to;
 
