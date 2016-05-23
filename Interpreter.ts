@@ -102,6 +102,7 @@ module Interpreter {
     */
     const moveCmd = "move"
     const takeCmd = "take"
+    const putCmd = "put"
 
     // could add for all keywords, idk...
     const floor = "floor"
@@ -142,8 +143,19 @@ module Interpreter {
                     interpretation.push([{ polarity: true, relation: "holding", args: [obj] }])
                 });
                 break;
+            case putCmd:
             case moveCmd:
                 var objsToMove = filter(cmd.entity.object, state);
+                if (state.holding != null) {
+                    var holdingMatch: boolean = false;
+                    if (cmd.entity.object === null || typeof cmd.entity.object.location === "undefined")
+                        holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
+                    else
+                        holdingMatch = isMatch(cmd.entity.object.object, state.objects[state.holding]);
+                    if (isMatch)
+                        objsToMove.push(state.holding);
+                }
+                
                 var destinations = filter(cmd.location.entity.object, state);
                 if (cmd.location.entity.object.form === floor) {
                     destinations.push(floor);
@@ -427,18 +439,18 @@ module Interpreter {
 
     function filter(filter: Parser.Object, state: WorldState): string[] {
         var result: string[] = [];
-        var used_objects: string[];
+        var objects: string[];
         if (filter.location === null || typeof filter.location === "undefined") {
-            used_objects = Array.prototype.concat.apply([], state.stacks);
+            objects = Array.prototype.concat.apply([], state.stacks);
         } else {
-            used_objects = filter_relations(filter.location, state);
+            objects = filter_relations(filter.location, state);
         }
-        if (used_objects.length === 0) {
+        if (objects.length === 0) {
           throw "Couldn't find any matching object";
         }
         var obj: Parser.Object;
         // Filter based on desired properties
-        for (var n of used_objects) {
+        for (var n of objects) {
             obj = state.objects[n];
             if (isMatch(filter, obj))
                 result.push(n);

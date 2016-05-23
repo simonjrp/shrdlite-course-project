@@ -191,7 +191,7 @@ module Planner {
                     // If one condition is false within an AND statement,
                     // the conjunction cannot be true
                     if (!isGoal) 
-                        return false;
+                         break;
                 }
                 // If any of the conditions within an OR statement is true
                 // the OR statement must be true
