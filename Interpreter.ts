@@ -28,7 +28,7 @@ module Interpreter {
 
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
-    
+
     /**
     Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. No need to change this one.
     * @param parses List of parses produced by the Parser.
@@ -155,7 +155,7 @@ module Interpreter {
                     if (isMatch)
                         objsToMove.push(state.holding);
                 }
-                
+
                 var destinations = filter(cmd.location.entity.object, state);
                 if (cmd.location.entity.object.form === floor) {
                     destinations.push(floor);
@@ -403,18 +403,16 @@ module Interpreter {
             && relation === Rel.inside
             && (objToMove.form === "pyramid"
                 || objToMove.form === "plank"
-                || (objToMove.form === "box"
-                    && objToMove.size === destination.size))) {
+                || (objToMove.form === "box" )
+                    && objToMove.size === destination.size)) {
             return false;
         }
 
         // "Small boxes cannot be supported by small bricks or pyramids."
-        if ((objToMove.form === "box"
-              || objToMove.form === "brick")
-              && objToMove.size === "small"
+        if (objToMove.form === "box"
+              && destination.size === "small" && objToMove.size === "small"
               && relation === Rel.ontop
-              && destination.form === "pyramid"
-              && destination.size === "small") {
+              && ( destination.form === "pyramid" || destination.form === "brick" ) ) {
             return false;
         }
 
