@@ -387,7 +387,8 @@ module Interpreter {
         }
 
         // "Objects are “inside” boxes, but “ontop” of other objects."
-        if (destination.form === "box" && relation === Rel.ontop) {
+        if ((destination.form === "box" && relation === Rel.ontop)
+            || (destination.form != "box" && relation === Rel.inside)) {
             return false;
         }
 
@@ -434,23 +435,36 @@ module Interpreter {
         }
         return true;
     }
+    // take (the white ball left of the table) under the box
+    // take the (white ball left of (the table under the box))
 
-    function filter(filter: Parser.Object, state: WorldState): string[] {
+    function filter(obj: Parser.Object, state: WorldState): string[] {
         var result: string[] = [];
+        var leif: string[];
         var objects: string[];
-        if (filter.location === null || typeof filter.location === "undefined") {
+        if (obj.location === null || typeof obj.location === "undefined") {
             objects = Array.prototype.concat.apply([], state.stacks);
         } else {
-            objects = filter_relations(filter.location, state);
+            if(obj.object.object != null) {
+                leif = filter(obj.object, state);
+                objects = filter_relations(obj.location, state);
+                objects = objects.filter(value => {
+                    return leif.indexOf(value) != -1
+                });
+            } else {
+                objects = filter_relations(obj.location, state);
+            }
+
+            
         }
         if (objects.length === 0) {
           throw "Couldn't find any matching object";
         }
-        var obj: Parser.Object;
-        // Filter based on desired properties
+        var tmp: Parser.Object;
+        // obj based on desired properties
         for (var n of objects) {
-            obj = state.objects[n];
-            if (isMatch(filter, obj))
+            tmp = state.objects[n];
+            if (isMatch(obj, tmp))
                 result.push(n);
         }
         return result;
@@ -514,7 +528,8 @@ module Interpreter {
     }
 
     function inside(location: Parser.Location, state: WorldState) : string[] {
-        console.log("INSIDE");
+        // if(location.entity.object.form != "box")
+        //     return [];
         var result: string[] = [];
         var potentialBoxes: string[] = filter(location.entity.object, state);
         potentialBoxes.forEach(potentialBox => {
@@ -573,7 +588,8 @@ module Interpreter {
     }
 
     function onTop(location: Parser.Location, state: WorldState) : string[] {
-        console.log("ONTOP");
+        // if(location.entity.object.form === "box")
+        //     return [];
         var result: string[] = [];
         if (location.entity.object.form === floor) {
             state.stacks.forEach(stack => {
@@ -605,11 +621,7 @@ module Interpreter {
             case Rel.rightof:
                 return leftRightOf(location, state, relation);
             case Rel.inside:
-                if (location.entity.object.form != "box") {
-                    throw "No matching relation";
-                } else {
-                    return inside(location, state);
-                }
+                return inside(location, state);
             case Rel.above:
                 return aboveUnder(location, state, relation);
             case Rel.under:
@@ -617,11 +629,7 @@ module Interpreter {
             case Rel.beside:
                 return beside(location, state);
             case Rel.ontop:
-                if (location.entity.object.form === "box") {
-                    throw "No matching relation";
-                } else {
-                    return onTop(location, state);
-                }
+                return onTop(location, state);
             default:
                 throw "No matching relation";
         }
