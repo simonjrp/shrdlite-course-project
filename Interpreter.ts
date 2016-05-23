@@ -504,6 +504,7 @@ module Interpreter {
     }
 
     function inside(location: Parser.Location, state: WorldState) : string[] {
+        console.log("INSIDE");
         var result: string[] = [];
         var potentialBoxes: string[] = filter(location.entity.object, state);
         potentialBoxes.forEach(potentialBox => {
@@ -562,6 +563,7 @@ module Interpreter {
     }
 
     function onTop(location: Parser.Location, state: WorldState) : string[] {
+        console.log("ONTOP");
         var result: string[] = [];
         if (location.entity.object.form === floor) {
             state.stacks.forEach(stack => {
@@ -593,15 +595,23 @@ module Interpreter {
             case Rel.rightof:
                 return leftRightOf(location, state, relation);
             case Rel.inside:
-                return inside(location, state);
+                if (location.entity.object.form != "box") {
+                    throw "No matching relation";
+                } else {
+                    return inside(location, state);
+                }
             case Rel.above:
                 return aboveUnder(location, state, relation);
             case Rel.under:
                 return aboveUnder(location, state, relation);
             case Rel.beside:
-                  return beside(location, state);
+                return beside(location, state);
             case Rel.ontop:
-                return onTop(location, state );
+                if (location.entity.object.form === "box") {
+                    throw "No matching relation";
+                } else {
+                    return onTop(location, state);
+                }
             default:
                 throw "No matching relation";
         }
