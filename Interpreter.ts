@@ -488,14 +488,6 @@ module Interpreter {
         return color_match && form_match && size_match;
     }
 
-    function contains(array: Object[], obj: Object) : number {
-        for (var i = 0; i < array.length; i++) {
-            if (array[i] === obj)
-                return i;
-        }
-        return -1;
-    }
-
     function aboveUnder(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         if (location.entity.object.form === floor && relation === Rel.above) {
@@ -507,8 +499,8 @@ module Interpreter {
             var delimiters: string[] = filter(location.entity.object, state);
             delimiters.forEach(delimiter => {
                 state.stacks.forEach(stack => {
-                   var index = contains(stack, delimiter);
-                   if (index != -1) {
+                    var index = stack.indexOf(delimiter);
+                    if (index != -1) {
                        if (relation === Rel.above) {
                            result = result.concat(stack.slice(index));
                        } else {
@@ -527,7 +519,7 @@ module Interpreter {
         var objFound: Parser.Object;
         potentialBoxes.forEach(potentialBox => {
             state.stacks.forEach(stack => {
-                var index: number = contains(stack, potentialBox);
+                var index: number = stack.indexOf(potentialBox);
                 objFound = state.objects[potentialBox];
                 if (index > -1) {
                     if (index + 1 < stack.length && objFound.form == "box") {
@@ -545,7 +537,7 @@ module Interpreter {
 
         leftOfObj.forEach(delimiter => {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
-                if (contains(state.stacks[i], delimiter) != -1) {
+                if (state.stacks[i].indexOf(delimiter) != -1) {
                     if (relation === Rel.leftof) {
                         for (var x: number = 0; x < i; ++x ) {
                             result = result.concat(state.stacks[x]);
@@ -567,7 +559,7 @@ module Interpreter {
         var leftOfObj: string[] = filter(location.entity.object, state);
         leftOfObj.forEach(bottom => {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
-                if (contains(state.stacks[i], bottom) != -1) {
+                if (state.stacks[i].indexOf(bottom) != -1) {
                     if (i != 0) {
                         result = result.concat(state.stacks[i - 1]);
                     }
@@ -596,7 +588,7 @@ module Interpreter {
             var objFound: Parser.Object;
             delimiters.forEach(delimiter => {
                 state.stacks.forEach(stack => {
-                    var index = contains(stack, delimiter);
+                    var index = stack.indexOf(delimiter);
                     objFound = state.objects[delimiter];
                     if (index != -1 && objFound.form != "box") {
                         if (index + 1 < stack.length) {
