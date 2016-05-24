@@ -101,7 +101,7 @@ module Planner {
                         if (n.state.holding === destination
                             || n.state.holding === objToMove) {
                             isGoal = false;
-                            continue;
+                            break;
                         }
                     }
                     isGoal = false;

@@ -118,6 +118,7 @@ function aStarSearch<Node>(
 
         // If we've found the goal node, return path and cost to get there
         if (goal(current)) {
+            goal(current);
             result.path = expandPath(current);
             result.cost = g.getValue(current);
             return result;
