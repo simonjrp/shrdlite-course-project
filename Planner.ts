@@ -111,7 +111,7 @@ module Planner {
                         case Interpreter.Rel.rightof:
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
                                 destIndex = n.state.stacks[k].indexOf(destination);
-                                if (n.state.stacks[k].indexOf(destination) != -1) {
+                                if (destIndex != -1) {
                                     var objs: string[] = [];
                                     if (relation === Interpreter.Rel.leftof)
                                         objs = [].concat.apply([], n.state.stacks.slice(0,k));
@@ -121,6 +121,7 @@ module Planner {
                                         isGoal = true;
                                         break;
                                     }
+                                    break;
                                 }
                             }
                             break;                      

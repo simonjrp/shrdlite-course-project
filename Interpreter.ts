@@ -528,15 +528,15 @@ module Interpreter {
     }
 
     function inside(location: Parser.Location, state: WorldState) : string[] {
-        // if(location.entity.object.form != "box")
-        //     return [];
         var result: string[] = [];
         var potentialBoxes: string[] = filter(location.entity.object, state);
+        var objFound: Parser.Object;
         potentialBoxes.forEach(potentialBox => {
             state.stacks.forEach(stack => {
                 var index: number = contains(stack, potentialBox);
+                objFound = state.objects[potentialBox];
                 if (index > -1) {
-                    if (index + 1 < stack.length) {
+                    if (index + 1 < stack.length && objFound.form == "box") {
                         result.push(stack[index + 1]);
                     }
                 }
@@ -599,10 +599,12 @@ module Interpreter {
             });
         } else {
             var delimiters: string[] = filter(location.entity.object, state);
+            var objFound: Parser.Object;
             delimiters.forEach(delimiter => {
                 state.stacks.forEach(stack => {
                     var index = contains(stack, delimiter);
-                    if (index != -1) {
+                    objFound = state.objects[delimiter];
+                    if (index != -1 && objFound.form != "box") {
                         if (index + 1 < stack.length) {
                             result = [stack[index + 1]]
                         }
