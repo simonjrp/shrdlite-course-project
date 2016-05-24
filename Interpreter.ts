@@ -174,9 +174,7 @@ module Interpreter {
                       && (rela === "inside" || rela === "ontop")) // not sure about this
                       || (entQuant === "all" && locQuant === "any" && objsToMove.length > 1))){
                     var temp: any = [];
-                    var c: number = 0;
                     for (var obj of objsToMove) {
-                        ++c;
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
@@ -186,14 +184,12 @@ module Interpreter {
                             }
                         }
                     }
-                    console.log("first")
                     var groups = groupBy(temp, function(item: any) {
                         return item.args[0];
                     });
                     var cprod = cartProd.apply(this, groups)
                     interpretation = cprod;
                 } else if ((entQuant === "any" && locQuant === "all")) {
-                    console.log("second")
                     var temp1: any = []
                     var counter: number = 0
                     for (var obj of objsToMove) {
@@ -222,6 +218,10 @@ module Interpreter {
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
                                                                  cmd.location.relation)) {
+                               if (rela === "inside" || (rela === "ontop"
+                                        && state.objects[dest].form !== floor)) {
+                                   throw "Things can be inside or on top exactly one object"
+                               }
                                var p = { polarity: true,
                                      relation: cmd.location.relation,
                                      args: [obj, dest] }
@@ -427,13 +427,7 @@ module Interpreter {
             return false;
 
         // Obvious spatial law; an object cannot be right/left/etc of itself
-        if ((relation === Rel.leftof
-              || relation === Rel.rightof
-              || relation === Rel.beside)
-              && objToMove === destination) {
-            return false;
-        }
-        return true;
+        return objToMove !== destination;
     }
     // take (the white ball left of the table) under the box
     // take the (white ball left of (the table under the box))
@@ -455,7 +449,7 @@ module Interpreter {
                 objects = filter_relations(obj.location, state);
             }
 
-            
+
         }
         if (objects.length === 0) {
           throw "Couldn't find any matching object";
