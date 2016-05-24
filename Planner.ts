@@ -119,7 +119,6 @@ module Planner {
                                         objs = [].concat.apply([], n.state.stacks.slice(k+1));
                                     if (objs.indexOf(objToMove) != -1) {
                                         isGoal = true;
-                                        break;
                                     }
                                     break;
                                 }
@@ -137,9 +136,11 @@ module Planner {
                             } else {
                                 for (var k: number = 0; k < n.state.stacks.length; k++) {
                                     destIndex = n.state.stacks[k].indexOf(destination);
-                                    if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1
-                                        && n.state.stacks[k][destIndex + 1] === objToMove) {
-                                        isGoal = true;
+                                    if (destIndex != -1) {
+                                        if (destIndex < n.state.stacks[k].length - 1
+                                            && n.state.stacks[k][destIndex + 1] === objToMove) {
+                                            isGoal = true
+                                        }
                                         break;
                                     }
                                 }
@@ -148,25 +149,28 @@ module Planner {
                         case Interpreter.Rel.above:
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
                                 destIndex = n.state.stacks[k].indexOf(destination);
-                                if (destIndex != -1 && destIndex < n.state.stacks[k].length - 1) {
-                                    var above: string[] = n.state.stacks[k].slice(destIndex + 1);
-                                    if(above.indexOf(objToMove) != -1) {
-                                        isGoal = true;
-                                        break;
+                                if (destIndex != -1) {
+                                    if (destIndex < n.state.stacks[k].length - 1) {
+                                        var above: string[] = n.state.stacks[k].slice(destIndex + 1);
+                                        if (above.indexOf(objToMove) != -1) {
+                                            isGoal = true;
+                                        }
                                     }
+                                    break;
                                 }
                             }
                             break;
                         case Interpreter.Rel.under:
-                            
                             for (var k: number = 0; k < n.state.stacks.length; k++) {
                                 destIndex = n.state.stacks[k].indexOf(destination);
-                                if (destIndex != -1 && destIndex > 0) {
-                                    var under: string[] = n.state.stacks[k].slice(0, destIndex);
-                                    if (under.indexOf(objToMove) != -1) {
-                                        isGoal = true;
-                                        break;
+                                if (destIndex != -1) {
+                                    if (destIndex > 0) {
+                                        var under: string[] = n.state.stacks[k].slice(0, destIndex);
+                                        if (under.indexOf(objToMove) != -1) {
+                                            isGoal = true;
+                                        }
                                     }
+                                    break;
                                 }
                             }
                             break;
@@ -178,8 +182,8 @@ module Planner {
                                         || (k < n.state.stacks.length - 1
                                             && n.state.stacks[k + 1].indexOf(objToMove) != -1)) {
                                         isGoal = true;
-                                        break;
                                     }
+                                    break;
                                 }
                             }
                             break;
