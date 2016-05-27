@@ -273,73 +273,83 @@ module Planner {
                   var leftOfObject : string;
                   var leftOfIndex : number;
                   var rightOfIndex : number;
+
                   //This is so only the left goal check is needed
                   if( relation == Interpreter.Rel.leftof) {
-                    rightOfObject = objToMove;
-                    leftOfObject = destination;
-                  } else {
                     rightOfObject = destination;
                     leftOfObject = objToMove;
+                  } else {
+                    rightOfObject = objToMove;
+                    leftOfObject = destination;
                   }
 
                   if( n.state.holding != leftOfObject && n.state.holding != rightOfObject  ) {
-                    var isGoal : boolean = false;
+                    var rightSide : number;
                     for (var k: number = 0; k < n.state.stacks.length; k++) {
                       rightOfIndex = n.state.stacks[k].indexOf(rightOfObject)
                       if ( rightOfIndex != -1) {
-                        var objs: string[] = [];
-                        objs = [].concat.apply([], n.state.stacks.slice(0,k));
-                        if (objs.indexOf(leftOfObject) != -1) {
-                          isGoal = true;
-                        }  else {
-                          stepsFromTop = n.state.stacks[k].length - rightOfIndex - 1;
-                        }
+                        rightSide = k;
+                        stepsFromTop = n.state.stacks[k].length - rightOfIndex - 1;
                         break;
                       }
                     }
-                    for( var k: number = 0; !isGoal && k < n.state.stacks.length; k++) {  //!isGoal is a constraint in the loop
+                    for( var k: number = rightSide; k < n.state.stacks.length; k++) {
                       leftOfIndex = n.state.stacks[k].indexOf(leftOfObject);
                       if ( leftOfIndex != -1 ) {
                         if( stepsFromTop > n.state.stacks[k].length - leftOfIndex - 1 ) {
                           stepsFromTop = n.state.stacks[k].length - leftOfIndex - 1;
-                          currentGoal = currentGoal + stepsFromTop;
                         }
                         break;
                       }
                     }
                   }
+                  currentGoal = currentGoal + stepsFromTop;
                   break;
 
                   case Interpreter.Rel.ontop:
                   case Interpreter.Rel.inside:
-                  if (destination === "floor") {
-                    if(n.state.holding != objToMove) {
-                      for (var k: number = 0; k < n.state.stacks.length; k++) {
-                        ToMoveIndex = n.state.stacks[k].indexOf(objToMove);
-                        if (ToMoveIndex != -1) {
-                          if(ToMoveIndex - 1 === 0 ) { //if not a goal
-                            stepsFromTop = n.state.stacks[k].length - ToMoveIndex - 1;
-                            currentGoal = currentGoal + stepsFromTop;
-                          }
-                          break;
+
+
+                  var isGoal: boolean = false;
+                  stepsFromTop = 0;
+                  if(n.state.holding != objToMove) {
+                    for (var k: number = 0; k < n.state.stacks.length; k++) {
+                      ToMoveIndex = n.state.stacks[k].indexOf(objToMove);
+                      if (ToMoveIndex != -1) {
+                        destIndex = n.state.stacks[k].indexOf(destination);
+                        if( destIndex != -1 && destIndex + 1 == ToMoveIndex ) {
+                          isGoal = true;
+                        } else {
+                          stepsFromTop = n.state.stacks[k].length - ToMoveIndex - 1;
                         }
-                      }
-                    }
-                  } else {
-                    if( n.state.holding != objToMove ) {
-                      for (var k: number = 0; k < n.state.stacks.length; k++) {
-                        ToMoveIndex = n.state.stacks[k].indexOf(objToMove);
-                        if( ToMoveIndex != -1 ) {
-                          if( n.state.stacks[k].indexOf(destination )== -1 || ToMoveIndex < n.state.stacks[k].indexOf(destination ) ) { //if not a goal
-                            stepsFromTop = n.state.stacks[k].length - ToMoveIndex - 1;
-                            currentGoal = currentGoal + stepsFromTop;
-                          }
-                          break;
-                        }
+                        break;
                       }
                     }
                   }
+
+                  if( !isGoal ) {
+                    var destinationFromTop = -1;
+                    if(n.state.holding != destination ) {
+                      for (var k: number = 0; k < n.state.stacks.length; k++) {
+                        if( destination === "floor") {
+                          if( destinationFromTop === -1 || destinationFromTop >  n.state.stacks[k].length ) {
+                            destinationFromTop = n.state.stacks[k].length;
+                          }
+                        } else {
+                          destIndex = n.state.stacks[k].indexOf(destination);
+                          if (destIndex != -1) {
+                            destinationFromTop = n.state.stacks[k].length - destIndex - 1;
+                            break;
+                          }
+                        }
+                      }
+                    } else {
+                      destinationFromTop = 0; //TODO should there be a penalty cost for lifting destination?
+                    }
+                    currentGoal = currentGoal + stepsFromTop + destinationFromTop;
+                  }
                   break;
+
 
 
                   case Interpreter.Rel.under:
@@ -347,7 +357,7 @@ module Planner {
 
                   var objectAbove : string;
                   var objectUnder : string;
-                  if( Interpreter.Rel.above === relation ) {
+                  if( relation === Interpreter.Rel.above  ) {
                     objectAbove = objToMove;
                     objectUnder = destination;
                   } else {
@@ -359,7 +369,8 @@ module Planner {
                     for (var k: number = 0; k < n.state.stacks.length; k++) {
                       ToMoveIndex = n.state.stacks[k].indexOf(objectAbove);
                       if( ToMoveIndex != -1 ) {
-                        if( n.state.stacks[k].indexOf(objectUnder) == -1 || ToMoveIndex <  n.state.stacks[k].indexOf(objectUnder) ) { //if not a goal
+                        destIndex = n.state.stacks[k].indexOf(objectUnder);
+                        if( destIndex != -1 && ToMoveIndex <  destIndex )  { //if not a goal
                           stepsFromTop =  n.state.stacks[k].length - ToMoveIndex - 1;
                           currentGoal = currentGoal + stepsFromTop;
                         }
@@ -371,27 +382,29 @@ module Planner {
 
                   case Interpreter.Rel.beside:
                   if( n.state.holding != destination &&  n.state.holding != objToMove ) {
-                    var isGoal : boolean = false;
+                    var ToMoveStackIndex : number;
+                    var DestStackIndex : number;
+
                     for (var k: number = 0; k < n.state.stacks.length; k++) {
                       destIndex = n.state.stacks[k].indexOf(destination);
                       if(destIndex != -1) {
-                        stepsFromTop = n.state.stacks[k].length - destIndex - 1;
-                        if( k > 0 && n.state.stacks[k-1 ].indexOf(objToMove) === -1 ||
-                        (k < n.state.stacks.length - 1 && n.state.stacks[k + 1].indexOf(objToMove) != -1)) {
-                          isGoal = true;
-                        }
-                        break;
+                        DestStackIndex = k;
                       }
-                    }
-                    for (var k: number = 0; !isGoal && k < n.state.stacks.length ; k++) { //!isGoal is a constraint in the loop
+
                       ToMoveIndex = n.state.stacks[k].indexOf(objToMove);
                       if(ToMoveIndex != -1) {
-                        if( stepsFromTop > n.state.stacks[k].length - ToMoveIndex - 1 ) {
-                          stepsFromTop = n.state.stacks[k].length - ToMoveIndex - 1;
-                        }
-                        currentGoal = currentGoal  + stepsFromTop;
-                        break;
+                        ToMoveStackIndex = k;
                       }
+                    }
+
+                    //if not a goal
+                    if( !(DestStackIndex > 0 && n.state.stacks[DestStackIndex-1 ].indexOf(objToMove) != -1 ||
+                    (DestStackIndex < n.state.stacks.length - 1 && n.state.stacks[DestStackIndex + 1].indexOf(objToMove) != -1))) {
+                      stepsFromTop = n.state.stacks[DestStackIndex].length - destIndex - 1;
+                      if( stepsFromTop > n.state.stacks[ToMoveStackIndex].length - ToMoveIndex - 1 ) {
+                        stepsFromTop = n.state.stacks[ToMoveStackIndex].length - ToMoveIndex - 1;
+                      }
+                      currentGoal = currentGoal + stepsFromTop;
                     }
                   }
                   break;
