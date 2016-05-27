@@ -60,9 +60,11 @@ function aStarSearch<Node>(
     cost: 0
   };
 
+    var hValue: collections.Dictionary<Node,number> = new collections.Dictionary<Node, number>();
+
     function compareCost(a: Node, b: Node): number {
-        var costA: number = g.getValue(a) + heuristics(a);
-        var costB: number = g.getValue(b) + heuristics(b);
+        var costA: number = g.getValue(a) + hValue.getValue(a);
+        var costB: number = g.getValue(b) + hValue.getValue(b);
         if (costA > costB)
             return -1
         else if (costA < costB)
@@ -83,6 +85,8 @@ function aStarSearch<Node>(
 
     // Cost to get to each node form the start node
     var g: collections.Dictionary<Node,number> = new collections.Dictionary<Node, number>();
+
+
 
     // Set of visited (already expanded) nodes
     var visited: collections.Set<Node> = new collections.Set<Node>();
@@ -106,13 +110,14 @@ function aStarSearch<Node>(
     var newCost: number;
 
     // Add the initial starting node
+    hValue.setValue( start, heuristics(start));
     g.setValue(start, 0);
     frontierQ.enqueue(start);
     frontierSet.add(start);
     // while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
   while (!frontierSet.isEmpty()) {
 
-      // Pick node with smallest f() = g() + h() value
+      // Pick node with smallest f() = g() + hValue() value
       current = frontierQ.dequeue();
       frontierSet.remove(current);
 
@@ -138,8 +143,12 @@ function aStarSearch<Node>(
             // cost from start node to neighbour via the current node
             newCost = g.getValue(current) + edges[i].cost;
 
-            if (frontierSet.contains(neighbour) && newCost >= oldCost) 
+            if (frontierSet.contains(neighbour) && newCost >= oldCost)
                 continue;
+
+            if(!hValue.containsKey(neighbour) ) {
+              hValue.setValue( neighbour, heuristics(neighbour));
+            }
 
             parent.setValue(neighbour, current);
             g.setValue(neighbour, newCost);

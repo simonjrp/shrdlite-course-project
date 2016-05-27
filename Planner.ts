@@ -231,14 +231,14 @@ module Planner {
             var result = aStarSearch(graph, startNode, g, h, 10); //h = heuristic
             endTime = new Date().getTime()
             hTime = endTime- startTime;
-            
+
             alert( "Heurstic time: " + hTime + " ms");
 
             startTime = new Date().getTime()
             aStarSearch(graph, startNode, g, blind, 10); //blind = heuristic
             endTime = new Date().getTime()
             blindTime = endTime- startTime;
-            alert( "A* is " + (blindTime - hTime) + " ms faster with the heuristic vs without" );
+            alert( "A* is " + (blindTime - hTime) + " ms faster with the heuristic vs blind " );
             return result;
           }
 
