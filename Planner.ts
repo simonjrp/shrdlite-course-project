@@ -228,12 +228,14 @@ module Planner {
             var hTime : number;
 
             startTime = new Date().getTime()
-            var result = aStarSearch(graph, startNode, g, h, 10);
+            var result = aStarSearch(graph, startNode, g, h, 10); //h = heuristic
             endTime = new Date().getTime()
             hTime = endTime- startTime;
+            
+            alert( "Heurstic time: " + hTime + " ms");
 
             startTime = new Date().getTime()
-            aStarSearch(graph, startNode, g, blind, 10);
+            aStarSearch(graph, startNode, g, blind, 10); //blind = heuristic
             endTime = new Date().getTime()
             blindTime = endTime- startTime;
             alert( "A* is " + (blindTime - hTime) + " ms faster with the heuristic vs without" );
@@ -275,7 +277,7 @@ module Planner {
                   var rightOfIndex : number;
 
                   //This is so only the left goal check is needed
-                  if( relation == Interpreter.Rel.leftof) {
+                  if( relation === Interpreter.Rel.leftof) {
                     rightOfObject = destination;
                     leftOfObject = objToMove;
                   } else {
@@ -293,16 +295,20 @@ module Planner {
                         break;
                       }
                     }
+                    var isGoal = true;
                     for( var k: number = rightSide; k < n.state.stacks.length; k++) {
                       leftOfIndex = n.state.stacks[k].indexOf(leftOfObject);
                       if ( leftOfIndex != -1 ) {
                         if( stepsFromTop > n.state.stacks[k].length - leftOfIndex - 1 ) {
                           stepsFromTop = n.state.stacks[k].length - leftOfIndex - 1;
                         }
+                        isGoal = false;
                         break;
                       }
                     }
-                    currentGoal = currentGoal + stepsFromTop;
+                    if( !isGoal) {
+                      currentGoal = currentGoal + stepsFromTop;
+                    }
                   }
                   break;
 
@@ -317,7 +323,7 @@ module Planner {
                       ToMoveIndex = n.state.stacks[k].indexOf(objToMove);
                       if (ToMoveIndex != -1) {
                         destIndex = n.state.stacks[k].indexOf(destination);
-                        if( destIndex != -1 && destIndex + 1 == ToMoveIndex ) {
+                        if( destIndex != -1 && destIndex + 1 === ToMoveIndex ) {
                           isGoal = true;
                         } else {
                           stepsFromTop = n.state.stacks[k].length - ToMoveIndex - 1;
