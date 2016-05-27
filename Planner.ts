@@ -302,8 +302,8 @@ module Planner {
                         break;
                       }
                     }
+                    currentGoal = currentGoal + stepsFromTop;
                   }
-                  currentGoal = currentGoal + stepsFromTop;
                   break;
 
                   case Interpreter.Rel.ontop:
