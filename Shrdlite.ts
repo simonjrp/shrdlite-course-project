@@ -80,6 +80,10 @@ module Shrdlite {
             }
         }
         catch(err) {
+            if (err instanceof Interpreter.AmbiguityError) {
+                world.printError("Ambiguity -- Did you mean", err.message + "? Please rephrase");
+                return;
+            }
             world.printError("Interpretation error", err);
             return;
         }

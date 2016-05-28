@@ -124,9 +124,7 @@ module Interpreter {
     {
       world: "small",
       utterance: "put all balls right of the box",
-      interpretations: [["rightof(e,l) & rightof(f,l)",
-        "rightof(e,k) & rightof(f,k)",
-        "rightof(e,m) & rightof(f,m)"]]
+      interpretations: []
 
     },
     {
@@ -140,8 +138,7 @@ module Interpreter {
     {
       world: "small",
       utterance: "put the ball beside all boxes",
-      interpretations: [["beside(e,k) & beside(e,l) & beside(e,m)",
-        "beside(f,k) & beside(f,l) & beside(f,m)"]]
+      interpretations: []
 
     },
     {
@@ -157,6 +154,15 @@ module Interpreter {
       interpretations: [["beside(l,e) & beside(l,f)",
         "beside(k,e) & beside(k,f)",
         "beside(m,e) & beside(m,f)"]]
+
+    },
+    {
+      world: "complex",
+      utterance: "put all balls beside any pyramid",
+      interpretations: [["beside(e,i) & beside(f,i)",
+        "beside(e,i) & beside(f,j)",
+        "beside(e,j) & beside(f,i)",
+        "beside(e,j) & beside(f,j)"]]
 
     }
   );

@@ -104,8 +104,12 @@ module Interpreter {
     const takeCmd = "take"
     const putCmd = "put"
 
-    // could add for all keywords, idk...
     const floor = "floor"
+
+    // quantifiers
+    const allq = "all"
+    const anyq = "any"
+    const theq = "the"
 
     /*
     * An enumeration of the various relations
@@ -163,16 +167,16 @@ module Interpreter {
 
                 var entQuant: string = cmd.entity.quantifier
                 var locQuant: string = cmd.location.entity.quantifier
-                var rela: string = cmd.location.relation
+                var rela: Rel = (<any> Rel)[cmd.location.relation]
 
-                if (entQuant === "all" && locQuant === "all"
-                                            && (rela === "inside" || rela === "ontop")) {
+                if (entQuant === allq && locQuant === allq
+                                            && (rela === Rel.inside || rela === Rel.ontop)) {
                     throw "Things can only be inside or on top exactly one object"
                 }
 
-                if (((entQuant === "any" && locQuant === "all" && destinations.length > 1
-                      && (rela === "inside" || rela === "ontop")) // not sure about this
-                      || (entQuant === "all" && locQuant === "any" && objsToMove.length > 1))){
+                if (((entQuant === anyq && locQuant === allq && destinations.length > 1
+                      && (rela === Rel.inside || rela === Rel.ontop)) // not sure about this
+                      || (entQuant === allq && locQuant === anyq && objsToMove.length > 1))) {
                     var temp: any = [];
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
@@ -184,12 +188,15 @@ module Interpreter {
                             }
                         }
                     }
+                    if (temp.length == 0) {
+                        throw "No valid interpretation found"
+                    }
                     var groups = groupBy(temp, function(item: any) {
                         return item.args[0];
                     });
                     var cprod = cartProd.apply(this, groups)
                     interpretation = cprod;
-                } else if ((entQuant === "any" && locQuant === "all")) {
+                } else if ((entQuant === anyq && locQuant === allq)) {
                     var temp1: any = []
                     var counter: number = 0
                     for (var obj of objsToMove) {
@@ -208,17 +215,17 @@ module Interpreter {
                         interpretation = s;
                     } else {
                         for (var x of s) {
-                          interpretation.push(x)
+                            interpretation.push(x)
                         }
                     }
-                 } else if ((entQuant === "the" && locQuant === "all") ||
-                            (entQuant === "all" && locQuant === "the")) {
+                 } else if ((entQuant === theq && locQuant === allq)
+                                                    || (entQuant === allq && locQuant === theq)) {
                     var tmp: any = []
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
                             if (isValid(state.objects[obj], state.objects[dest],
                                                                  cmd.location.relation)) {
-                               if (rela === "inside" || (rela === "ontop"
+                               if (rela === Rel.inside || (rela === Rel.ontop
                                         && state.objects[dest].form !== floor)) {
                                    throw "Things can be inside or on top exactly one object"
                                }
@@ -230,26 +237,23 @@ module Interpreter {
                             }
                         }
                     }
+                    if (tmp.length == 0) {
+                        throw "No valid interpretation found"
+                    }
                     var gs: any = []
                     tmp = unique(tmp)
-                    if (entQuant === "all" && locQuant === "the" && destinations.length > 1) {
-                        gs = groupBy(tmp, function(item: any) {
-                            return item.args[1];
-                        });
-                        // Ambiguity!
-                    } else if (entQuant === "the" && locQuant === "all" && objsToMove.length > 1) {
-                        gs = groupBy(tmp, function(item: any) {
-                        return item.args[0];
-                      });
-                      // Ambiguity!
+                    if (entQuant === allq && locQuant === theq && destinations.length > 1) {
+                        throw new AmbiguityError(mkClarificationMessage(destinations, state));
+                    } else if (entQuant === theq && locQuant === allq && objsToMove.length > 1) {
+                      throw new AmbiguityError(mkClarificationMessage(objsToMove, state));
                     } else {
                         gs = groupBy(tmp, function(item: any) {
                             return item.relation;
                         });
                     }
                     interpretation = gs;
-                 } else if ((entQuant === "all" && objsToMove.length > 1)
-                              || locQuant === "all") {
+                 } else if ((entQuant === allq && objsToMove.length > 1)
+                              || locQuant === allq) {
                      var tmp: any = []
                      for (var obj of objsToMove) {
                          for (var dest of destinations) {
@@ -278,7 +282,11 @@ module Interpreter {
                             }
                         }
                     }
-                    // check for ambiguity here
+                    if (interpretation.length > 1 && entQuant === theq && objsToMove.length > 1) {
+                        throw new AmbiguityError(mkClarificationMessage(objsToMove, state));
+                    } else if (interpretation.length > 1 && locQuant === theq && destinations.length > 1) {
+                        throw new AmbiguityError(mkClarificationMessage(destinations, state));
+                    }
                 }
                 break;
             default:
@@ -288,6 +296,25 @@ module Interpreter {
             throw "No valid interpetations found."
         }
         return unique(interpretation);
+    }
+
+    function mkClarificationMessage(objects: string[], state: WorldState) : string {
+        var possibleObjs: string[] = [];
+        for (var obj of objects) {
+            var stackn: number = 0;
+            for (var a: number = 0; a < state.stacks.length; ++a) {
+                if (state.stacks[a].indexOf(obj) != -1) {
+                    stackn = a + 1;
+                    break;
+                }
+            }
+            possibleObjs.push("the " + state.objects[obj].size + " "
+                           + state.objects[obj].color + " "
+                           + state.objects[obj].form + " (in stack "
+                           + stackn + ")");
+        }
+        var msg: string = possibleObjs.join(" or ");
+        return msg;
     }
 
     function groupBy(array: any, f: any) {
@@ -395,7 +422,8 @@ module Interpreter {
         // "Balls cannot support anything."
         if (destination.form === "ball"
             && (relation === Rel.ontop
-                || relation === Rel.inside)) {
+                || relation === Rel.inside
+                || relation === Rel.under)) {
             return false;
         }
 
@@ -620,6 +648,14 @@ module Interpreter {
                 return onTop(location, state);
             default:
                 throw "No matching relation";
+        }
+    }
+
+    export class AmbiguityError implements Error {
+        public name: string = "Interpreter.AmbiguityError"
+        public message: string;
+        constructor(m: string) {
+            this.message = m
         }
     }
 }
