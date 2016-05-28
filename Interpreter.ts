@@ -152,12 +152,15 @@ module Interpreter {
                 var objsToMove = filter(cmd.entity.object, state);
                 if (state.holding != null) {
                     var holdingMatch: boolean = false;
-                    if (cmd.entity.object === null || typeof cmd.entity.object.location === "undefined")
+                    //console.log(state.objects[state.holding])
+                    if (cmd.entity.object === null || typeof cmd.entity.object.location === "undefined") {
                         holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
-                    else
+                    } else {
                         holdingMatch = isMatch(cmd.entity.object.object, state.objects[state.holding]);
-                    if (isMatch)
+                    }
+                    if (holdingMatch) {
                         objsToMove.push(state.holding);
+                    }
                 }
 
                 var destinations = filter(cmd.location.entity.object, state);
