@@ -75,7 +75,11 @@ module Planner {
      */
     function planInterpretation(interpretation: Interpreter.DNFFormula, state: WorldState): string[] {
 
-        // The goal function
+        /**
+        * The goal function.
+        * @param n The node to perform the goal test on.
+        * @return True if the given node is a goal node, or false otherwise.
+        */
         function g(n: StateNode): boolean {
             var objToMove: string;
             var destination: string;
@@ -202,6 +206,11 @@ module Planner {
             return false;
         }
 
+        /**
+        * The heuristics function.
+        * @param n The node to calculate heuristics for.
+        * @return The heuristic value for the given node.
+        */
         function h(n: StateNode): number {
 
                 var objToMove: string;
@@ -395,6 +404,12 @@ module Planner {
                 return cheapestGoal;
             } //end of function
 
+        /**
+        * Given a search result, returns a list of actions representing the plan
+        * on what movements to make to reach the goal.
+        * @param result The search result to construct the plan from.
+        * @return A list of actions such as "l", "r", "d" or "p".
+        */
         function buildPlan(result: SearchResult <StateNode>): string[] {
             var plan: string[] = [];
             var graph: Graph <StateNode> = new StateGraph(state.objects);
