@@ -335,22 +335,24 @@ module Interpreter {
         var possibleObjs: string[] = [];
         for (var obj of objects) {
             var stackn: number = 0;
-            for (var a: number = 0; a < state.stacks.length; ++a) {
-                if (state.stacks[a].indexOf(obj) != -1) {
-                    stackn = a + 1;
-                    break;
+            var holding: boolean = state.holding === obj
+            if (!holding) {
+                for (var a: number = 0; a < state.stacks.length; ++a) {
+                    if (state.stacks[a].indexOf(obj) != -1) {
+                        stackn = a + 1;
+                        break;
+                    }
                 }
             }
+            var stackS: string = " (in stack " + stackn + ")"
+            var holdS: string = " (the robot is holding)"
             possibleObjs.push("the " + state.objects[obj].size + " "
                            + state.objects[obj].color + " "
-                           + state.objects[obj].form + " (in stack "
-                           + stackn + ")");
+                           + state.objects[obj].form +
+                           (holding ? holdS : stackS));
         }
         return possibleObjs.join(" or ");
     }
-
-    // take (the white ball left of the table) under the box
-    // take the (white ball left of (the table under the box))
 
     /**
      * Finds all possible objects that could match the given filter 'obj' in the
@@ -516,7 +518,6 @@ module Interpreter {
     function leftRightOf(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
-
         leftOfObj.forEach(delimiter => {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
                 if (state.stacks[i].indexOf(delimiter) != -1) {
@@ -570,8 +571,6 @@ module Interpreter {
      * @returns A list of all objects on top of the given location.
      */
     function onTop(location: Parser.Location, state: WorldState) : string[] {
-        // if(location.entity.object.form === "box")
-        //     return [];
         var result: string[] = [];
         if (location.entity.object.form === floor) {
             state.stacks.forEach(stack => {
