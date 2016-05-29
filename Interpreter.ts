@@ -475,9 +475,8 @@ module Interpreter {
 
         // "Balls cannot support anything."
         if (destination.form === "ball"
-            && (relation === Rel.ontop
-                || relation === Rel.inside
-                || relation === Rel.under)) {
+            && ((relation === Rel.ontop
+                || relation === Rel.inside) || (destination.size == "small" && objToMove.size == "large"))) {
             return false;
         }
 
