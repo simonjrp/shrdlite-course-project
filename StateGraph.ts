@@ -1,10 +1,11 @@
 ///<reference path="Graph.ts"/>
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Util.ts"/>
 
 // A node containing a world state
 class StateNode {
-    
+
     constructor(
         public state: WorldState
     ) { }
@@ -102,9 +103,9 @@ class StateGraph implements Graph<StateNode> {
                         destination = this.objects[state.stacks[state.arm][stackSize - 1]];
                     var isValid: boolean;
                     if (destination.form === "box")
-                        isValid = Interpreter.isValid(objToMove, destination, "inside")
+                        isValid = Util.isValid(objToMove, destination, "inside")
                     else
-                        isValid = Interpreter.isValid(objToMove, destination, "ontop")
+                        isValid = Util.isValid(objToMove, destination, "ontop")
 
                     if (isValid) {
                         state.stacks[state.arm].push(state.holding);

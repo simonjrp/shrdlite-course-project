@@ -72,16 +72,14 @@ module Shrdlite {
                 world.printDebugInfo("  (" + n + ") " + Interpreter.stringify(result));
             });
 
+            // multiple parsings issue was not solved, only ambiguous 'the' references are handled
             if (interpretations.length > 1) {
-                // several interpretations were found -- how should this be handled?
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we let the planner decide?
+                // we leave the planner to choose one
             }
         }
         catch(err) {
             if (err instanceof Interpreter.AmbiguityError) {
-                world.printError("Ambiguity -- Did you mean", err.message + "? Please rephrase");
+                world.printError("Ambiguity -- Did you mean", err.message + "? Please rephrase.");
                 return;
             }
             world.printError("Interpretation error", err);

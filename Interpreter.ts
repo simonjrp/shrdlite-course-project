@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
+///<reference path="Util.ts"/>
 
 /**
 * Interpreter module
@@ -138,67 +139,70 @@ module Interpreter {
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState) : DNFFormula {
         var interpretation: DNFFormula = [];
-        state.objects["floor"] = { "form": "floor", "size": null, "color": null };
-
+        state.objects[floor] = { "form": floor, "size": null, "color": null };
         switch (cmd.command) {
             case takeCmd:
-                //  if (cmd.comman)
-                filter(cmd.entity.object, state).forEach(obj => {
+                var objcts: string[] = filter(cmd.entity.object, state);
+                objcts.forEach(obj => {
                     interpretation.push([{ polarity: true, relation: "holding", args: [obj] }])
                 });
+                // handle the case where an object is being held by the robot arm
+                if (state.holding != null) {
+                    if (isMatch(cmd.entity.object, state.objects[state.holding])) {
+                        objcts.push(state.holding);
+                        interpretation.push([{ polarity: true, relation: "holding", args: [state.holding] }])
+                    }
+                }
+                if (interpretation.length > 1 && cmd.entity.quantifier === theq && objcts.length > 1) {
+                    throw new AmbiguityError(mkClarificationMessage(objcts, state));
+                }
                 break;
             case putCmd:
             case moveCmd:
-                var objsToMove: string[];
+                var objsToMove: string[] = [];
                 var destinations: string[] = filter(cmd.location.entity.object, state);
                 var entQuant: string;
-                console.log(cmd);
-                if(cmd.entity) { // A "put the <object> <location> command"
+                if (cmd.entity) {  // A "put the <object> <location> command"
                     var holdingMatch: boolean = false;
                     var holdingMatchDest: boolean = false;
-
                     if (state.holding != null) {
                         holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
                         holdingMatchDest = isMatch(cmd.location.entity.object, state.objects[state.holding]);
-
-                        if (holdingMatch) {
-                            objsToMove.push(state.holding);
-                        } else if (holdingMatchDest) {
+                        if (holdingMatchDest) {
                             destinations.push(state.holding);
                         }
                     }
                     objsToMove = filter(cmd.entity.object, state);
+                    if (holdingMatch) {
+                        objsToMove.push(state.holding);
+                    }
                     entQuant = cmd.entity.quantifier;
-                    
-                } else {
+                } else {  // put 'it'
                     if (state.holding === null) {
                         throw "You are not holding anything. Please rephrase."
-                    } else {
-                        objsToMove = [state.holding];
                     }
-                    entQuant = "the";
+                    objsToMove = [state.holding];
+                    entQuant = theq;
                 }
 
-                //var destinations = filter(cmd.location.entity.object, state);
                 if (cmd.location.entity.object.form === floor) {
                     destinations.push(floor);
                 }
 
                 var locQuant: string = cmd.location.entity.quantifier
                 var rela: Rel = (<any> Rel)[cmd.location.relation]
-
                 if (entQuant === allq && locQuant === allq
                                             && (rela === Rel.inside || rela === Rel.ontop)) {
                     throw "Things can only be inside or on top exactly one object"
                 }
-
+                // handle commands like 'put a ball in every box'
                 if (((entQuant === anyq && locQuant === allq && destinations.length > 1
                       && (rela === Rel.inside || rela === Rel.ontop)) // not sure about this
                       || (entQuant === allq && locQuant === anyq && objsToMove.length > 1))) {
                     var temp: any = [];
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
-                            if (isValid(state.objects[obj], state.objects[dest],
+                            if (Util.isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
                                 temp.push({ polarity: true,
                                       relation: cmd.location.relation,
@@ -209,18 +213,19 @@ module Interpreter {
                     if (temp.length == 0) {
                         throw "No valid interpretation found"
                     }
-                    var groups = groupBy(temp, function(item: any) {
+                    // group by the entity object
+                    var groups = Util.groupBy(temp, function(item: any) {
                         return item.args[0];
                     });
-                    var cprod = cartProd.apply(this, groups)
-                    interpretation = cprod;
-                } else if ((entQuant === anyq && locQuant === allq)) {
+                    // take the cartesian product to get all pairs of conjucts
+                    interpretation = Util.cartProd.apply(this, groups)
+                } else if (entQuant === anyq && locQuant === allq) {
                     var temp1: any = []
                     var counter: number = 0
                     for (var obj of objsToMove) {
                         ++counter;
                         for (var dest of destinations) {
-                            if (isValid(state.objects[obj], state.objects[dest],
+                            if (Util.isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
                                 temp1.push({ polarity: true,
                                       relation: cmd.location.relation,
@@ -228,7 +233,8 @@ module Interpreter {
                             }
                         }
                     }
-                    var s = splitUp(temp1, counter);
+                    // split by how many entity objects there are
+                    var s = Util.splitUp(temp1, counter);
                     if (counter == 1) {
                         interpretation = s;
                     } else {
@@ -241,7 +247,7 @@ module Interpreter {
                     var tmp: any = []
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
-                            if (isValid(state.objects[obj], state.objects[dest],
+                            if (Util.isValid(state.objects[obj], state.objects[dest],
                                                                  cmd.location.relation)) {
                                if (rela === Rel.inside || (rela === Rel.ontop
                                         && state.objects[dest].form !== floor)) {
@@ -259,23 +265,24 @@ module Interpreter {
                         throw "No valid interpretation found"
                     }
                     var gs: any = []
-                    tmp = unique(tmp)
+                    tmp = Util.unique(tmp)
+                    // If more than one object matches and the quantifier is 'the' throw ambiguity error with a question
                     if (entQuant === allq && locQuant === theq && destinations.length > 1) {
                         throw new AmbiguityError(mkClarificationMessage(destinations, state));
                     } else if (entQuant === theq && locQuant === allq && objsToMove.length > 1) {
-                      throw new AmbiguityError(mkClarificationMessage(objsToMove, state));
+                        throw new AmbiguityError(mkClarificationMessage(objsToMove, state));
                     } else {
-                        gs = groupBy(tmp, function(item: any) {
+                        gs = Util.groupBy(tmp, function(item: any) {
                             return item.relation;
                         });
+                        interpretation = gs;
                     }
-                    interpretation = gs;
                  } else if ((entQuant === allq && objsToMove.length > 1)
-                              || locQuant === allq) {
+                                                        || locQuant === allq) {
                      var tmp: any = []
                      for (var obj of objsToMove) {
                          for (var dest of destinations) {
-                             if (isValid(state.objects[obj], state.objects[dest],
+                             if (Util.isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
                                 var p = { polarity: true,
                                       relation: cmd.location.relation,
@@ -285,14 +292,14 @@ module Interpreter {
                              }
                          }
                      }
-                     var groups = groupBy(unique(tmp), function(item: any) {
+                     var groups = Util.groupBy(Util.unique(tmp), function(item: any) {
                          return item.relation;
                      });
                      interpretation = groups;
                 } else {
                     for (var obj of objsToMove) {
                         for (var dest of destinations) {
-                            if (isValid(state.objects[obj], state.objects[dest],
+                            if (Util.isValid(state.objects[obj], state.objects[dest],
                                                                   cmd.location.relation)) {
                                 interpretation.push([{ polarity: true,
                                       relation: cmd.location.relation,
@@ -302,7 +309,8 @@ module Interpreter {
                     }
                     if (interpretation.length > 1 && entQuant === theq && objsToMove.length > 1) {
                         throw new AmbiguityError(mkClarificationMessage(objsToMove, state));
-                    } else if (interpretation.length > 1 && locQuant === theq && destinations.length > 1) {
+                    }
+                    if (interpretation.length > 1 && locQuant === theq && destinations.length > 1) {
                         throw new AmbiguityError(mkClarificationMessage(destinations, state));
                     }
                 }
@@ -313,12 +321,12 @@ module Interpreter {
         if (interpretation.length == 0) {
             throw "No valid interpetations found."
         }
-        return unique(interpretation);
+        return Util.unique(interpretation);
     }
 
     /**
      * Used to build a clarification message in case the interpreter find an
-     * ambiguity.
+     * ambiguity when we have multiple objects being referred to with 'the'.
      * @param objects The list of possible objects
      * @param state The world state in which the ambiguity occurred.
      * @returns A message explaining the ambiguity
@@ -338,178 +346,9 @@ module Interpreter {
                            + state.objects[obj].form + " (in stack "
                            + stackn + ")");
         }
-        var msg: string = possibleObjs.join(" or ");
-        return msg;
+        return possibleObjs.join(" or ");
     }
 
-    /**
-     * Takes an array of objects and groups them by the given f() function.
-     * @param array The array containing data to group.
-     * @param f A function that, given an object in the array, returns the property of which to group by.
-     * @returns A list of all the groups.
-     */
-    function groupBy(array: any, f: any) {
-        var groups = {};
-        array.forEach(function(o: any) {
-            var group = JSON.stringify(f(o));
-            (<any>groups)[group] = (<any>groups)[group] || [];
-            (<any>groups)[group].push(o);
-        });
-        return Object.keys(groups).map(function(group) {
-            return (<any>groups)[group];
-        });
-    }
-
-    /**
-     * Returns the cartesian product of the given array.
-     * @param paramArray The array for which to create the cartesian product.
-     * @returns The cartesian product.
-     */
-    function cartProd(paramArray: any) {
-        function addTo(curr: any, args: any) {
-            var i: number
-            var copy: any
-            var rest: any = args.slice(1)
-            var last: any = !rest.length
-            var result: any = [];
-
-            for (i = 0; i < args[0].length; i++) {
-                copy = curr.slice();
-                copy.push(args[0][i]);
-
-                if (last) {
-                    result.push(copy);
-
-                } else {
-                    result = result.concat(addTo(copy, rest));
-                }
-            }
-            return result;
-        }
-        return addTo([], Array.prototype.slice.call(arguments));
-    }
-
-    /**
-     * Splits the given array into n equal parts
-     * @param array The array to split.
-     * @param n How many times to split the array.
-     * @returns Returns an array of all the sub parts (splits).
-     */
-    function splitUp(arr: any, n: number) {
-        var rest = arr.length % n
-        var restUsed = rest
-        var partLength = Math.floor(arr.length / n)
-        var result: any = [];
-
-        for (var i = 0; i < arr.length; i += partLength) {
-            var end = partLength + i
-            var add = false;
-            if (rest !== 0 && restUsed) {
-                end++;
-                restUsed--;
-                add = true;
-            }
-            result.push(arr.slice(i, end));
-            if (add) {
-                i++;
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * Takes an array and returns a new array containing only unique items.
-     * @param arr The array to find unique items in.
-     * @returns A list of unique elements from the given array.
-     */
-    function unique(arr: any[]) {
-        var uniques: any[] = [];
-        var found: any = {};
-        for (var i = 0; i < arr.length; i++) {
-            var stringified = JSON.stringify((<any>arr)[i]);
-            if ((<any>found)[stringified]) {
-                continue;
-            }
-            uniques.push((<any>arr)[i]);
-            (<any>found)[stringified] = true;
-        }
-        return uniques;
-    }
-
-    /**
-     * Checks if the given relation between two objects is valid.
-     * @param objToMove The subject of the binary relation.
-     * @param destination The object that has a relation to the subject.
-     * @param rel The relation between 'objToMove' and 'destination'.
-     * @returns True if the relation is valid, false otherwise.
-     */
-    export function isValid(objToMove: Parser.Object, destination: Parser.Object,
-                                                          rel: string): boolean {
-        var relation: Rel = (<any>Rel)[rel];
-
-        // "Small objects cannot support large objects."
-        if (objToMove.size === "large"
-              && destination.size === "small"
-              && (relation === Rel.inside
-                || relation === Rel.ontop)) {
-            return false;
-        }
-
-        if (objToMove.form === "ball" && relation === Rel.under)
-            return false;
-
-        // "Balls must be in boxes or on the floor, otherwise they roll away."
-        if (objToMove.form === "ball"
-            && (destination.form != "box"
-                && destination.form != "floor"
-                && (relation === Rel.ontop
-                  || relation === Rel.inside))) {
-            return false;
-        }
-
-        // "Objects are “inside” boxes, but “ontop” of other objects."
-        if ((destination.form === "box" && relation === Rel.ontop)
-            || (destination.form != "box" && relation === Rel.inside)) {
-            return false;
-        }
-
-        // "Balls cannot support anything."
-        if (destination.form === "ball"
-            && ((relation === Rel.ontop
-                || relation === Rel.inside) || (relation === Rel.under && destination.size == "small" && objToMove.size == "large"))) {
-            return false;
-        }
-
-        // "Boxes cannot contain pyramids, planks or boxes of the same size."
-        if (destination.form === "box"
-            && relation === Rel.inside
-            && (objToMove.form === "pyramid"
-                || objToMove.form === "plank"
-                || (objToMove.form === "box" )
-                    && objToMove.size === destination.size)) {
-            return false;
-        }
-
-        // "Small boxes cannot be supported by small bricks or pyramids."
-        if (objToMove.form === "box"
-              && destination.size === "small" && objToMove.size === "small"
-              && relation === Rel.ontop
-              && ( destination.form === "pyramid" || destination.form === "brick" ) ) {
-            return false;
-        }
-
-        // "Large boxes cannot be supported by large pyramids."
-        // We assume that this is badly formulated because a strict
-        // implementation of this rule would mean that large boxes can be on top
-        // of small pyramids, which doesn't make sense.
-        if (objToMove.form === "box"
-              && objToMove.size === "large"
-              && destination.form === "pyramid")
-            return false;
-
-        // Obvious spatial law; an object cannot be right/left/etc of itself
-        return objToMove !== destination;
-    }
     // take (the white ball left of the table) under the box
     // take the (white ball left of (the table under the box))
 
@@ -527,7 +366,7 @@ module Interpreter {
         if (obj.location === null || typeof obj.location === "undefined") {
             objects = Array.prototype.concat.apply([], state.stacks);
         } else {
-            if(obj.object.object != null) {
+            if (obj.object.object != null) {
                 leif = filter(obj.object, state);
                 objects = filter_relations(obj.location, state);
                 objects = objects.filter(value => {
@@ -536,8 +375,6 @@ module Interpreter {
             } else {
                 objects = filter_relations(obj.location, state);
             }
-
-
         }
         if (objects.length === 0) {
           throw "Couldn't find any matching object";
@@ -553,11 +390,39 @@ module Interpreter {
     }
 
     /**
+     * Gives a list of all objects with the given relation.
+     * @param location The object describing the relation.
+     * @param state The current world state.
+     * @returns A list of all objects with the given relation.
+     */
+    function filter_relations(location: Parser.Location, state: WorldState) : string[] {
+        var relation: Rel = (<any>Rel)[location.relation];
+        switch (relation) {
+            case Rel.leftof:
+                return leftRightOf(location, state, relation);
+            case Rel.rightof:
+                return leftRightOf(location, state, relation);
+            case Rel.inside:
+                return inside(location, state);
+            case Rel.above:
+                return aboveUnder(location, state, relation);
+            case Rel.under:
+                return aboveUnder(location, state, relation);
+            case Rel.beside:
+                return beside(location, state);
+            case Rel.ontop:
+                return onTop(location, state);
+            default:
+                throw "No matching relation";
+        }
+    }
+
+    /**
      * Checks if the given object has the size, form and color specified in 'filter'.
      * @param filter An object with the color, size and form to match.
      * @param obj The object to match with the provided filter.
      * @returns True if the object is a match, false otherwise.
-     */    
+     */
     function isMatch(filter: Parser.Object, obj: Parser.Object) : boolean {
         var color_match: boolean;
         var form_match: boolean;
@@ -656,11 +521,11 @@ module Interpreter {
             for (var i: number = 0 ; i < state.stacks.length; ++i) {
                 if (state.stacks[i].indexOf(delimiter) != -1) {
                     if (relation === Rel.leftof) {
-                        for (var x: number = 0; x < i; ++x ) {
+                        for (var x: number = 0; x < i; ++x) {
                             result = result.concat(state.stacks[x]);
                         }
                     } else {
-                        for (var x: number = i + 1; x < state.stacks.length; ++x ) {
+                        for (var x: number = i + 1; x < state.stacks.length; ++x) {
                             result = result.concat(state.stacks[x]);
                         }
                     }
@@ -730,35 +595,6 @@ module Interpreter {
             })
         }
         return result;
-    }
-
-
-    /**
-     * Gives a list of all objects with the given relation.
-     * @param location The object describing the relation.
-     * @param state The current world state.
-     * @returns A list of all objects with the given relation.
-     */
-    function filter_relations(location: Parser.Location, state: WorldState) : string[] {
-        var relation: Rel = (<any>Rel)[location.relation];
-        switch (relation) {
-            case Rel.leftof:
-                return leftRightOf(location, state, relation);
-            case Rel.rightof:
-                return leftRightOf(location, state, relation);
-            case Rel.inside:
-                return inside(location, state);
-            case Rel.above:
-                return aboveUnder(location, state, relation);
-            case Rel.under:
-                return aboveUnder(location, state, relation);
-            case Rel.beside:
-                return beside(location, state);
-            case Rel.ontop:
-                return onTop(location, state);
-            default:
-                throw "No matching relation";
-        }
     }
 
     // A custom error class used when we find an ambiguity error.

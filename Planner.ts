@@ -212,7 +212,6 @@ module Planner {
         * @return The heuristic value for the given node.
         */
         function h(n: StateNode): number {
-
                 var objToMove: string;
                 var destination: string;
                 var destIndex: number;
