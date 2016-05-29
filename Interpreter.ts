@@ -443,6 +443,9 @@ module Interpreter {
             return false;
         }
 
+        if (objToMove.form === "ball" && relation === Rel.under)
+            return false;
+
         // "Balls must be in boxes or on the floor, otherwise they roll away."
         if (objToMove.form === "ball"
             && (destination.form != "box"
