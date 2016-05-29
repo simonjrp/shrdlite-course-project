@@ -92,5 +92,5 @@ as an ambiguity error.
 Some final information; we wanted to mention that we solved the recursive descriptions in the interpreter. Furthermore, we can handle
 any command even if an object is held by the robot arm (in fact, we realised quite late that this case was not addressed). And lastly,
 commands that refer to ‘it’ when the robot is holding something, are also covered. For example, while holding an object and the
-utterance is ‘put it beside the red box’, it understand that ‘it’ refers to the one the arm is holding.
+utterance is ‘put it beside the red box’, it understand that ‘it’ refers to the one the arm is holding. We also added a new file `Util.ts` that contains certain utility functions we use in some parts.
 
