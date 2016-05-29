@@ -202,31 +202,6 @@ module Planner {
             return false;
         }
 
-        function blind(n: StateNode): number {
-            return 0;
-        }
-
-        function compareHeuristicWithBlind(): SearchResult <StateNode> {
-            var startTime: number;
-            var endTime: number;
-            var blindTime: number;
-            var hTime: number;
-
-            startTime = new Date().getTime()
-            var result = aStarSearch(graph, startNode, g, h, 10); //h = heuristic
-            endTime = new Date().getTime()
-            hTime = endTime - startTime;
-
-            alert("Heurstic time: " + hTime + " ms");
-
-            startTime = new Date().getTime()
-            aStarSearch(graph, startNode, g, blind, 10); //blind = heuristic
-            endTime = new Date().getTime()
-            blindTime = endTime - startTime;
-            alert("A* is " + (blindTime - hTime) + " ms faster with the heuristic vs blind ");
-            return result;
-        }
-
         function h(n: StateNode): number {
 
                 var objToMove: string;
@@ -444,7 +419,6 @@ module Planner {
         var graph: Graph <StateNode> = new StateGraph(state.objects);
 
         result = aStarSearch(graph, startNode, g, h, 10);
-        //result = compareHeuristicWithBlind();
         return buildPlan(result);
     }
 }
