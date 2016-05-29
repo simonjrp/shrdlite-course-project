@@ -149,21 +149,34 @@ module Interpreter {
                 break;
             case putCmd:
             case moveCmd:
-                var objsToMove = filter(cmd.entity.object, state);
-                var destinations = filter(cmd.location.entity.object, state);
+                var objsToMove: string[];
+                var destinations: string[] = filter(cmd.location.entity.object, state);
+                var entQuant: string;
+                console.log(cmd);
+                if(cmd.entity) { // A "put the <object> <location> command"
+                    var holdingMatch: boolean = false;
+                    var holdingMatchDest: boolean = false;
 
-                var holdingMatch: boolean = false;
-                var holdingMatchDest: boolean = false;
+                    if (state.holding != null) {
+                        holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
+                        holdingMatchDest = isMatch(cmd.location.entity.object, state.objects[state.holding]);
 
-                if (state.holding != null) {
-                    holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
-                    holdingMatchDest = isMatch(cmd.location.entity.object, state.objects[state.holding]);
-
-                    if (holdingMatch) {
-                        objsToMove.push(state.holding);
-                    } else if (holdingMatchDest) {
-                        destinations.push(state.holding);
+                        if (holdingMatch) {
+                            objsToMove.push(state.holding);
+                        } else if (holdingMatchDest) {
+                            destinations.push(state.holding);
+                        }
                     }
+                    objsToMove = filter(cmd.entity.object, state);
+                    entQuant = cmd.entity.quantifier;
+                    
+                } else {
+                    if (state.holding === null) {
+                        throw "You are not holding anything. Please rephrase."
+                    } else {
+                        objsToMove = [state.holding];
+                    }
+                    entQuant = "the";
                 }
 
                 //var destinations = filter(cmd.location.entity.object, state);
@@ -171,7 +184,6 @@ module Interpreter {
                     destinations.push(floor);
                 }
 
-                var entQuant: string = cmd.entity.quantifier
                 var locQuant: string = cmd.location.entity.quantifier
                 var rela: Rel = (<any> Rel)[cmd.location.relation]
 
