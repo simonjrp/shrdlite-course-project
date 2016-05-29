@@ -264,6 +264,7 @@ module Planner {
                                         }
                                     }
                                     var isGoal = true;
+                                    //starts from rightSide, not 0
                                     for (var k: number = rightSide; k <n.state.stacks.length; k++) {
                                         leftOfIndex = n.state.stacks[k].indexOf(leftOfObject);
                                         if (leftOfIndex != -1) {
