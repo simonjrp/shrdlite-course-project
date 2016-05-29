@@ -443,8 +443,8 @@ module Planner {
         var startNode: StateNode = new StateNode(state);
         var graph: Graph <StateNode> = new StateGraph(state.objects);
 
-        //result = aStarSearch(graph, startNode, g, h, 10);
-        result = compareHeuristicWithBlind();
+        result = aStarSearch(graph, startNode, g, h, 10);
+        //result = compareHeuristicWithBlind();
         return buildPlan(result);
     }
 }
