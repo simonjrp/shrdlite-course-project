@@ -151,19 +151,17 @@ module Interpreter {
             case moveCmd:
                 var objsToMove = filter(cmd.entity.object, state);
                 var destinations = filter(cmd.location.entity.object, state);
-                if (state.holding != null) {
-                    var holdingMatch: boolean = false;
-                    var destinations = filter(cmd.location.entity.object, state);
 
-                    //console.log(state.objects[state.holding])
-                    if (cmd.entity.object === null || typeof cmd.entity.object.location === "undefined") {
-                        holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
-                    } else {
-                        holdingMatch = isMatch(cmd.entity.object.object, state.objects[state.holding]);
-                    }
+                var holdingMatch: boolean = false;
+                var holdingMatchDest: boolean = false;
+
+                if (state.holding != null) {
+                    holdingMatch = isMatch(cmd.entity.object, state.objects[state.holding]);
+                    holdingMatchDest = isMatch(cmd.location.entity.object, state.objects[state.holding]);
+
                     if (holdingMatch) {
                         objsToMove.push(state.holding);
-                    } else {
+                    } else if (holdingMatchDest) {
                         destinations.push(state.holding);
                     }
                 }
