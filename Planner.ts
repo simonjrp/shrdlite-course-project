@@ -317,7 +317,7 @@ module Planner {
                                             }
                                         }
                                     } else {
-                                        destinationFromTop = 0; //TODO should there be a penalty cost for lifting destination?
+                                        destinationFromTop = 0;
                                     }
                                     currentGoal = currentGoal + stepsFromTop + destinationFromTop;
                                 }
