@@ -304,6 +304,13 @@ module Interpreter {
         return unique(interpretation);
     }
 
+    /**
+     * Used to build a clarification message in case the interpreter find an
+     * ambiguity.
+     * @param objects The list of possible objects
+     * @param state The world state in which the ambiguity occurred.
+     * @returns A message explaining the ambiguity
+     */
     function mkClarificationMessage(objects: string[], state: WorldState) : string {
         var possibleObjs: string[] = [];
         for (var obj of objects) {
@@ -323,6 +330,12 @@ module Interpreter {
         return msg;
     }
 
+    /**
+     * Takes an array of objects and groups them by the given f() function.
+     * @param array The array containing data to group.
+     * @param f A function that, given an object in the array, returns the property of which to group by.
+     * @returns A list of all the groups.
+     */
     function groupBy(array: any, f: any) {
         var groups = {};
         array.forEach(function(o: any) {
@@ -335,6 +348,11 @@ module Interpreter {
         });
     }
 
+    /**
+     * Returns the cartesian product of the given array.
+     * @param paramArray The array for which to create the cartesian product.
+     * @returns The cartesian product.
+     */
     function cartProd(paramArray: any) {
         function addTo(curr: any, args: any) {
             var i: number
@@ -359,7 +377,12 @@ module Interpreter {
         return addTo([], Array.prototype.slice.call(arguments));
     }
 
-
+    /**
+     * Splits the given array into n equal parts
+     * @param array The array to split.
+     * @param n How many times to split the array.
+     * @returns Returns an array of all the sub parts (splits).
+     */
     function splitUp(arr: any, n: number) {
         var rest = arr.length % n
         var restUsed = rest
@@ -381,8 +404,12 @@ module Interpreter {
         }
         return result;
     }
-
-    /* Removes duplicate elements from the array */
+    
+    /**
+     * Takes an array and returns a new array containing only unique items.
+     * @param arr The array to find unique items in.
+     * @returns A list of unique elements from the given array.
+     */
     function unique(arr: any[]) {
         var uniques: any[] = [];
         var found: any = {};
@@ -397,7 +424,13 @@ module Interpreter {
         return uniques;
     }
 
-    // TODO: Maybe move to another place? Used here and in StateGraph
+    /**
+     * Checks if the given relation between two objects is valid.
+     * @param objToMove The subject of the binary relation.
+     * @param destination The object that has a relation to the subject.
+     * @param rel The relation between 'objToMove' and 'destination'.
+     * @returns True if the relation is valid, false otherwise.
+     */
     export function isValid(objToMove: Parser.Object, destination: Parser.Object,
                                                           rel: string): boolean {
         var relation: Rel = (<any>Rel)[rel];
@@ -466,6 +499,13 @@ module Interpreter {
     // take (the white ball left of the table) under the box
     // take the (white ball left of (the table under the box))
 
+    /**
+     * Finds all possible objects that could match the given filter 'obj' in the
+     * given world state.
+     * @param obj The filter object to match other objects in the world with.
+     * @param state The state in which to find the objects.
+     * @returns A list of names of the objects that matches the given filter.
+     */
     function filter(obj: Parser.Object, state: WorldState): string[] {
         var result: string[] = [];
         var leif: string[];
@@ -498,6 +538,12 @@ module Interpreter {
         return result;
     }
 
+    /**
+     * Checks if the given object has the size, form and color specified in 'filter'.
+     * @param filter An object with the color, size and form to match.
+     * @param obj The object to match with the provided filter.
+     * @returns True if the object is a match, false otherwise.
+     */    
     function isMatch(filter: Parser.Object, obj: Parser.Object) : boolean {
         var color_match: boolean;
         var form_match: boolean;
@@ -522,6 +568,14 @@ module Interpreter {
         return color_match && form_match && size_match;
     }
 
+    /**
+     * Gives all objects in the given state that are either under or above the
+     * specified location.
+     * @param location The location that the object should be above or under.
+     * @param state The current world state.
+     * @param relation Should be either Rel.above or Rel.under.
+     * @returns A list of all objects above or under the given location.
+     */
     function aboveUnder(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         if (location.entity.object.form === floor && relation === Rel.above) {
@@ -547,6 +601,13 @@ module Interpreter {
         return result;
     }
 
+    /**
+     * Gives all objects in the given state that are inside the specified
+     * location.
+     * @param location The location that the object should be inside.
+     * @param state The current world state.
+     * @returns A list of all objects above or under the given location.
+     */
     function inside(location: Parser.Location, state: WorldState) : string[] {
         var result: string[] = [];
         var potentialBoxes: string[] = filter(location.entity.object, state);
@@ -565,6 +626,14 @@ module Interpreter {
         return result;
     }
 
+    /**
+     * Gives all objects in the given state that are either left or right of the
+     * specified location.
+     * @param location The location that the object should be left or right of.
+     * @param state The current world state.
+     * @param relation Should be either Rel.left or Rel.right.
+     * @returns A list of all objects either left or right of the given location.
+     */
     function leftRightOf(location: Parser.Location, state: WorldState, relation: Rel) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
@@ -588,6 +657,13 @@ module Interpreter {
         return result;
     }
 
+    /**
+     * Gives all objects in the given state that are beside (directly adjacent to)
+     * the specified location.
+     * @param location The location that the object should be beside.
+     * @param state The current world state.
+     * @returns A list of all objects beside the given location.
+     */
     function beside(location: Parser.Location, state: WorldState) : string[] {
         var result: string[] = [];
         var leftOfObj: string[] = filter(location.entity.object, state);
@@ -607,6 +683,13 @@ module Interpreter {
         return result;
     }
 
+    /**
+     * Gives all objects in the given state that are on top of the specified
+     * location.
+     * @param location The location that the object should be on top of.
+     * @param state The current world state.
+     * @returns A list of all objects on top of the given location.
+     */
     function onTop(location: Parser.Location, state: WorldState) : string[] {
         // if(location.entity.object.form === "box")
         //     return [];
@@ -635,6 +718,13 @@ module Interpreter {
         return result;
     }
 
+
+    /**
+     * Gives a list of all objects with the given relation.
+     * @param location The object describing the relation.
+     * @param state The current world state.
+     * @returns A list of all objects with the given relation.
+     */
     function filter_relations(location: Parser.Location, state: WorldState) : string[] {
         var relation: Rel = (<any>Rel)[location.relation];
         switch (relation) {
@@ -657,6 +747,7 @@ module Interpreter {
         }
     }
 
+    // A custom error class used when we find an ambiguity error.
     export class AmbiguityError implements Error {
         public name: string = "Interpreter.AmbiguityError"
         public message: string;
