@@ -75,7 +75,11 @@ module Planner {
      */
     function planInterpretation(interpretation: Interpreter.DNFFormula, state: WorldState): string[] {
 
-        // The goal function
+        /**
+        * The goal function.
+        * @param n The node to perform the goal test on.
+        * @return True if the given node is a goal node, or false otherwise.
+        */
         function g(n: StateNode): boolean {
             var objToMove: string;
             var destination: string;
@@ -202,31 +206,11 @@ module Planner {
             return false;
         }
 
-        function blind(n: StateNode): number {
-            return 0;
-        }
-
-        function compareHeuristicWithBlind(): SearchResult <StateNode> {
-            var startTime: number;
-            var endTime: number;
-            var blindTime: number;
-            var hTime: number;
-
-            startTime = new Date().getTime()
-            var result = aStarSearch(graph, startNode, g, h, 10); //h = heuristic
-            endTime = new Date().getTime()
-            hTime = endTime - startTime;
-
-            alert("Heurstic time: " + hTime + " ms");
-
-            startTime = new Date().getTime()
-            aStarSearch(graph, startNode, g, blind, 10); //blind = heuristic
-            endTime = new Date().getTime()
-            blindTime = endTime - startTime;
-            alert("A* is " + (blindTime - hTime) + " ms faster with the heuristic vs blind ");
-            return result;
-        }
-
+        /**
+        * The heuristics function.
+        * @param n The node to calculate heuristics for.
+        * @return The heuristic value for the given node.
+        */
         function h(n: StateNode): number {
 
                 var objToMove: string;
@@ -280,6 +264,7 @@ module Planner {
                                         }
                                     }
                                     var isGoal = true;
+                                    //starts from rightSide, not 0
                                     for (var k: number = rightSide; k <n.state.stacks.length; k++) {
                                         leftOfIndex = n.state.stacks[k].indexOf(leftOfObject);
                                         if (leftOfIndex != -1) {
@@ -333,7 +318,7 @@ module Planner {
                                             }
                                         }
                                     } else {
-                                        destinationFromTop = 0; //TODO should there be a penalty cost for lifting destination?
+                                        destinationFromTop = 0;
                                     }
                                     currentGoal = currentGoal + stepsFromTop + destinationFromTop;
                                 }
@@ -420,6 +405,12 @@ module Planner {
                 return cheapestGoal;
             } //end of function
 
+        /**
+        * Given a search result, returns a list of actions representing the plan
+        * on what movements to make to reach the goal.
+        * @param result The search result to construct the plan from.
+        * @return A list of actions such as "l", "r", "d" or "p".
+        */
         function buildPlan(result: SearchResult <StateNode>): string[] {
             var plan: string[] = [];
             var graph: Graph <StateNode> = new StateGraph(state.objects);
@@ -444,7 +435,6 @@ module Planner {
         var graph: Graph <StateNode> = new StateGraph(state.objects);
 
         result = aStarSearch(graph, startNode, g, h, 10);
-        //result = compareHeuristicWithBlind();
         return buildPlan(result);
     }
 }

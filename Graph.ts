@@ -114,8 +114,7 @@ function aStarSearch<Node>(
     g.setValue(start, 0);
     frontierQ.enqueue(start);
     frontierSet.add(start);
-    // while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
-  while (!frontierSet.isEmpty()) {
+    while (!frontierSet.isEmpty() && timeElapsed <= timeout) {
 
       // Pick node with smallest f() = g() + hValue() value
       current = frontierQ.dequeue();
